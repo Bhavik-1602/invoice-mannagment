@@ -68,6 +68,23 @@ export function getTodayISO(): string {
   return `${year}-${month}-${day}`;
 }
 
+export const INVOICE_NO_PREFIX = 'EIG/2627/';
+export const INVOICE_NO_START = 351;
+
+/**
+ * Next invoice number in the EIG/2627/<n> series, starting at EIG/2627/351
+ */
+export function getNextInvoiceNo(existingInvoiceNos: string[]): string {
+  let max = INVOICE_NO_START - 1;
+  for (const no of existingInvoiceNos) {
+    const trimmed = (no || '').trim();
+    if (!trimmed.toUpperCase().startsWith(INVOICE_NO_PREFIX)) continue;
+    const n = parseInt(trimmed.slice(INVOICE_NO_PREFIX.length), 10);
+    if (!isNaN(n) && n > max) max = n;
+  }
+  return `${INVOICE_NO_PREFIX}${max + 1}`;
+}
+
 /**
  * Generate a CSS class string from conditional classes
  */

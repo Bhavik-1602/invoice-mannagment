@@ -1,5 +1,5 @@
 import { roundTo2, parseNumeric } from './utils';
-import { InvoiceItemFormData } from '@/types';
+import { GstType, InvoiceItemFormData } from '@/types';
 
 /**
  * Calculate the taxable amount for a single item
@@ -23,7 +23,7 @@ export function calculateItemGST(taxableAmount: number, gstPercentage: number | 
  */
 export function calculateInvoiceTotals(
   items: InvoiceItemFormData[],
-  gstType: 'cgst_sgst' | 'igst'
+  gstType: GstType
 ) {
   let subtotal = 0;
   let totalGst = 0;
@@ -34,7 +34,7 @@ export function calculateInvoiceTotals(
     const gstPercentage = parseNumeric(item.gst_percentage);
 
     const taxableAmount = roundTo2(qty * rate);
-    const gstAmount = roundTo2(taxableAmount * (gstPercentage / 100));
+    const gstAmount = gstType === 'none' ? 0 : roundTo2(taxableAmount * (gstPercentage / 100));
 
     subtotal = roundTo2(subtotal + taxableAmount);
     totalGst = roundTo2(totalGst + gstAmount);
@@ -54,7 +54,7 @@ export function calculateInvoiceTotals(
     cgst = roundTo2(totalGst / 2);
     sgst = roundTo2(totalGst / 2);
     igst = 0;
-  } else {
+  } else if (gstType === 'igst') {
     igst = totalGst;
     cgst = 0;
     sgst = 0;

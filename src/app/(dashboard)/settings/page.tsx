@@ -63,6 +63,20 @@ export default function SettingsPage() {
         ifsc_code: ifscCode.trim(),
       });
       setSettings(updated);
+      if (companyName.trim()) {
+        try {
+          await DataStore.saveCompanyProfile({
+            company_name: companyName.trim(),
+            company_address: companyAddress.trim(),
+            company_gstin: companyGstin.trim() || null,
+            bank_name: bankName.trim() || null,
+            account_number: accountNumber.trim() || null,
+            ifsc_code: ifscCode.trim() || null,
+          });
+        } catch (e) {
+          console.warn('Could not save company profile:', e);
+        }
+      }
       showToast('Settings saved successfully', 'success');
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Failed to save settings', 'error');
@@ -127,11 +141,26 @@ export default function SettingsPage() {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = async () => {
-      const base64 = reader.result as string;
-      const updated = await DataStore.updateSettings({ logo_url: base64 });
-      setSettings(updated);
-      showToast('Logo updated successfully', 'success');
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = async () => {
+        const maxSide = 600;
+        const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(img.width * scale));
+        canvas.height = Math.max(1, Math.round(img.height * scale));
+        canvas.getContext('2d')?.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const pngBase64 = canvas.toDataURL('image/png');
+        try {
+          const updated = await DataStore.updateSettings({ logo_url: pngBase64 });
+          setSettings(updated);
+          showToast('Logo updated successfully', 'success');
+        } catch (err) {
+          showToast(err instanceof Error ? err.message : 'Failed to save logo', 'error');
+        }
+      };
+      img.onerror = () => showToast('Could not read this image file', 'error');
+      img.src = reader.result as string;
     };
     reader.readAsDataURL(file);
   };
@@ -159,7 +188,7 @@ export default function SettingsPage() {
       {/* Company Information */}
       <div className="card" style={{ marginBottom: '1.5rem' }}>
         <h3 className="card-title" style={{ marginBottom: '1rem' }}>Company information</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(, 100%), 1fr))', gap: '1rem' }}>
           <div className="form-group">
             <label className="form-label">Company Name</label>
             <input
@@ -193,7 +222,7 @@ export default function SettingsPage() {
       {/* Bank Details */}
       <div className="card" style={{ marginBottom: '1.5rem' }}>
         <h3 className="card-title" style={{ marginBottom: '1rem' }}>Bank details</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(, 100%), 1fr))', gap: '1rem' }}>
           <div className="form-group">
             <label className="form-label">Bank Name</label>
             <input
@@ -281,7 +310,7 @@ export default function SettingsPage() {
           </div>
         ))}
 
-        <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginTop: '1rem' }}>
           <input
             type="text"
             className="form-input"
@@ -300,7 +329,7 @@ export default function SettingsPage() {
       {/* Signature & Logo Upload */}
       <div className="card" style={{ marginBottom: '2rem' }}>
         <h3 className="card-title" style={{ marginBottom: '1rem' }}>Signature and logo</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+        <div className="grid-2">
           <div>
             <label className="form-label">Authorised Signatory</label>
             <div style={{ marginBottom: '0.5rem' }}>

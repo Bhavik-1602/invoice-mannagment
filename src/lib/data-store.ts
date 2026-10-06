@@ -13,15 +13,19 @@ export function isSupabaseConfigured(): boolean {
   return !!(url && key && !url.includes('placeholder') && !url.includes('your-project'));
 }
 
+export const DEFAULT_SELLER = {
+  company_name: 'IMPORT EXPORT',
+  company_address: 'GATE NO 3 KISHAN GATE METODA LODHIKA GIDC RAJKOT, 360021',
+  company_gstin: '',
+  bank_name: 'KOTAK BANK',
+  account_number: '1612991878',
+  ifsc_code: 'KKBK002016',
+};
+
 export const SEED_SETTINGS: CompanySettings = {
   id: 'set-default',
   user_id: 'default-user',
-  company_name: '',
-  company_address: '',
-  company_gstin: '',
-  bank_name: '',
-  account_number: '',
-  ifsc_code: '',
+  ...DEFAULT_SELLER,
   logo_url: null,
   signature_url: DEFAULT_SIGNATURE_BASE64,
   created_at: '2026-09-18T00:00:00Z',
@@ -210,17 +214,43 @@ export function initializeLocalStoreIfNeeded(): void {
 
 export const DataStore = {
   async getCompanyProfiles(): Promise<CompanyProfile[]> {
+    if (isSupabaseConfigured()) {
+      const supabase = createClient();
+      const { data, error } = await supabase.from('company_profiles').select('*').order('company_name');
+      assertOk(error);
+      return data || [];
+    }
     initializeLocalStoreIfNeeded();
     return getLocalItem<CompanyProfile[]>('inv_company_profiles', SEED_COMPANIES);
   },
 
   async saveCompanyProfile(profile: Partial<CompanyProfile>): Promise<CompanyProfile> {
-    initializeLocalStoreIfNeeded();
-    const profiles = getLocalItem<CompanyProfile[]>('inv_company_profiles', SEED_COMPANIES);
     const trimmedName = (profile.company_name || '').trim();
     if (!trimmedName) {
       throw new Error('Company / Firm name is required');
     }
+
+    if (isSupabaseConfigured()) {
+      const supabase = createClient();
+      const payload = {
+        company_name: trimmedName,
+        company_address: (profile.company_address || '').trim(),
+        company_gstin: (profile.company_gstin || '').trim() || null,
+        bank_name: (profile.bank_name || '').trim() || null,
+        account_number: (profile.account_number || '').trim() || null,
+        ifsc_code: (profile.ifsc_code || '').trim() || null,
+      };
+      const { data, error } = await supabase
+        .from('company_profiles')
+        .upsert(payload, { onConflict: 'company_name' })
+        .select()
+        .single();
+      assertOk(error);
+      return data;
+    }
+
+    initializeLocalStoreIfNeeded();
+    const profiles = getLocalItem<CompanyProfile[]>('inv_company_profiles', SEED_COMPANIES);
 
     const existingIndex = profiles.findIndex(
       (p) =>
@@ -259,7 +289,7 @@ export const DataStore = {
       const { data, error } = await supabase.from('company_settings').select('*').limit(1).maybeSingle();
       assertOk(error);
       if (data) return data;
-      return { ...SEED_SETTINGS, company_name: '', company_address: '', company_gstin: '', bank_name: '', account_number: '', ifsc_code: '' };
+      return { ...SEED_SETTINGS };
     }
     initializeLocalStoreIfNeeded();
     return getLocalItem('inv_settings', SEED_SETTINGS);
@@ -512,6 +542,7 @@ export const DataStore = {
       } else {
         const { data, error } = await supabase.from('invoices').insert(invoicePayload).select('id').single();
         assertOk(error);
+        if (!data) throw new Error('Invoice was not saved');
         targetId = data.id;
       }
 

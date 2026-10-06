@@ -139,7 +139,7 @@ CREATE TABLE invoices (
   invoice_date DATE NOT NULL,
   po_no TEXT,
   po_date DATE,
-  gst_type TEXT NOT NULL DEFAULT 'cgst_sgst' CHECK (gst_type IN ('cgst_sgst', 'igst')),
+  gst_type TEXT NOT NULL DEFAULT 'cgst_sgst' CHECK (gst_type IN ('cgst_sgst', 'igst', 'none')),
   subtotal NUMERIC(15, 2) NOT NULL DEFAULT 0,
   cgst NUMERIC(15, 2) NOT NULL DEFAULT 0,
   sgst NUMERIC(15, 2) NOT NULL DEFAULT 0,

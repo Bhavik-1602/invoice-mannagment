@@ -1,5 +1,7 @@
 // TypeScript types for the Invoice Management System
 
+export type GstType = 'cgst_sgst' | 'igst' | 'none';
+
 export interface Profile {
   id: string;
   email: string;
@@ -63,7 +65,7 @@ export interface Invoice {
   invoice_date: string;
   po_no: string | null;
   po_date: string | null;
-  gst_type: 'cgst_sgst' | 'igst';
+  gst_type: GstType;
   subtotal: number;
   cgst: number;
   sgst: number;
@@ -137,7 +139,7 @@ export interface InvoiceFormData {
   invoice_date: string;
   po_no: string;
   po_date: string;
-  gst_type: 'cgst_sgst' | 'igst';
+  gst_type: GstType;
   items: InvoiceItemFormData[];
 }
 

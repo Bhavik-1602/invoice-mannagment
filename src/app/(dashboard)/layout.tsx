@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, createContext, useContext } from 'react';
+import { useState, useEffect, useRef, createContext, useContext } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -42,6 +42,29 @@ export default function DashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const pathname = usePathname();
+  const mainRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const root = mainRef.current;
+    if (!root) return;
+
+    const labelTables = () => {
+      root.querySelectorAll<HTMLTableElement>('table.table').forEach((table) => {
+        const headers = Array.from(table.querySelectorAll('thead th')).map((th) => (th.textContent || '').replace(/[↑↓↕]/g, '').trim());
+        table.querySelectorAll('tbody tr').forEach((row) => {
+          Array.from(row.children).forEach((cell, i) => {
+            const label = headers[i] || '';
+            if (cell.getAttribute('data-label') !== label) cell.setAttribute('data-label', label);
+          });
+        });
+      });
+    };
+
+    labelTables();
+    const observer = new MutationObserver(labelTables);
+    observer.observe(root, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, []);
 
   let toastIdCounter = 0;
 
@@ -97,7 +120,7 @@ export default function DashboardLayout({
           <div className="sidebar-footer">GST billing</div>
         </aside>
 
-        <main className="main-content">
+        <main className="main-content" ref={mainRef}>
           <div className="top-bar">
             <div className="top-bar-start">
               <button
@@ -120,7 +143,7 @@ export default function DashboardLayout({
           </div>
         </main>
 
-        <div style={{ position: 'fixed', top: '1rem', right: '1rem', zIndex: 100, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <div className="toast-stack">
           {toasts.map((toast) => (
             <div
               key={toast.id}

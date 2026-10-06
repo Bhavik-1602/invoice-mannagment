@@ -232,7 +232,7 @@ export default function ProductsPage() {
       {/* Search & Stock Filter Bar */}
       <div className="card" style={{ marginBottom: '1.5rem', padding: '1rem' }}>
         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ flex: '1', minWidth: '240px' }}>
+          <div style={{ flex: '1', minWidth: 'min(240px, 100%)' }}>
             <input
               type="text"
               className="form-input"
@@ -401,7 +401,7 @@ export default function ProductsPage() {
               </div>
 
               {/* Stock Quantity & Unit Fields */}
-              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '0.75rem', marginBottom: '1rem', padding: '0.75rem', backgroundColor: '#F8FAFC', borderRadius: '0.5rem', border: '1px solid var(--border)' }}>
+              <div className="grid-2-1" style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: '#F8FAFC', borderRadius: '0.5rem', border: '1px solid var(--border)' }}>
                 <div className="form-group" style={{ margin: 0 }}>
                   <label className="form-label" style={{ fontWeight: 600 }}>Available Stock Qty *</label>
                   <input
@@ -428,7 +428,7 @@ export default function ProductsPage() {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
+              <div className="grid-3">
                 <div className="form-group">
                   <label className="form-label">HSN/SAC</label>
                   <input

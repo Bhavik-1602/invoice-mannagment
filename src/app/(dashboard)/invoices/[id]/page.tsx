@@ -102,7 +102,15 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
       {/* Invoice Preview */}
       <div className="invoice-preview">
         {/* Header */}
-        <div className="invoice-preview-header">
+        <div className="invoice-preview-header" style={{ position: 'relative' }}>
+          {settings?.logo_url && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={settings.logo_url}
+              alt="Logo"
+              className="invoice-preview-logo"
+            />
+          )}
           <h1>{invoice.company_name_snapshot || settings?.company_name || 'TAX INVOICE'}</h1>
           {(invoice.company_address_snapshot || settings?.company_address) && (
             <p>{invoice.company_address_snapshot || settings?.company_address}</p>
@@ -111,7 +119,7 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
         </div>
 
         {/* Billed To & Invoice Details */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border)' }}>
+        <div className="grid-2" style={{ marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border)' }}>
           <div>
             <h4 style={{ fontSize: '0.8125rem', fontWeight: 600, marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Billed To</h4>
             <p style={{ fontSize: '0.9375rem', fontWeight: 600 }}>M/s. {invoice.customer_name_snapshot}</p>
@@ -166,7 +174,7 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
                 <th style={{ width: '50px' }}>Sr.</th>
                 <th>Product Name / Description</th>
                 <th>HSN/SAC</th>
-                <th style={{ textAlign: 'center' }}>Qty</th>
+                <th style={{ textAlign: 'center' }}>Qty/Tan</th>
                 <th style={{ textAlign: 'right' }}>Rate</th>
                 <th style={{ textAlign: 'center' }}>GST %</th>
                 <th style={{ textAlign: 'right' }}>Amount</th>
@@ -187,7 +195,7 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
                   <td>{item.hsn_sac_snapshot || '-'}</td>
                   <td style={{ textAlign: 'center' }}>{item.qty}</td>
                   <td style={{ textAlign: 'right' }}>{formatCurrency(item.rate)}</td>
-                  <td style={{ textAlign: 'center' }}>{item.gst_percentage}%</td>
+                  <td style={{ textAlign: 'center' }}>{invoice.gst_type === 'none' ? '-' : `${item.gst_percentage}%`}</td>
                   <td style={{ textAlign: 'right', fontWeight: 500 }}>{formatCurrency(item.taxable_amount)}</td>
                 </tr>
               ))}
@@ -212,12 +220,12 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
                 <span>{formatCurrency(invoice.sgst)}</span>
               </div>
             </>
-          ) : (
+          ) : invoice.gst_type === 'igst' ? (
             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.375rem 0', fontSize: '0.875rem' }}>
               <span style={{ color: 'var(--text-secondary)' }}>IGST</span>
               <span>{formatCurrency(invoice.igst)}</span>
             </div>
-          )}
+          ) : null}
           <div style={{
             display: 'flex',
             justifyContent: 'space-between',
@@ -234,7 +242,9 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
 
         {/* Amount in Words */}
         <div style={{ marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border)', fontSize: '0.8125rem' }}>
-          <p><strong>Total GST (in words):</strong> {invoice.gst_in_words}</p>
+          {invoice.gst_type !== 'none' && (
+            <p><strong>Total GST (in words):</strong> {invoice.gst_in_words}</p>
+          )}
           <p style={{ marginTop: '0.25rem' }}><strong>Bill Amount (in words):</strong> {invoice.amount_in_words}</p>
         </div>
 
@@ -257,7 +267,7 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
             <img
               src={settings?.signature_url || '/signature.png'}
               alt="Authorised Signatory"
-              style={{ maxHeight: '55px', objectFit: 'contain' }}
+              style={{ maxHeight: '90px', maxWidth: '200px', objectFit: 'contain' }}
             />
           </div>
           <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>(Authorised Signatory)</p>

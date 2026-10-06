@@ -4,6 +4,7 @@ import { Invoice, InvoiceItem, CompanySettings, TermCondition } from '@/types';
 import { formatDate, formatNumberForPDF, roundTo2 } from './utils';
 import { amountToWords } from './number-to-words';
 import { DEFAULT_SIGNATURE_BASE64 } from './default-signature';
+import { DEFAULT_SELLER } from './data-store';
 
 export function generateInvoicePDF(
   invoice: Invoice,
@@ -27,8 +28,23 @@ export function generateInvoicePDF(
   // ==========================================
   // 1. HEADER - Company Name & Tax Invoice Title
   // ==========================================
-  const companyName = invoice.company_name_snapshot || settings?.company_name || '';
-  const companyAddress = invoice.company_address_snapshot || settings?.company_address || '';
+  const companyName = invoice.company_name_snapshot || settings?.company_name || DEFAULT_SELLER.company_name;
+  const companyAddress = invoice.company_address_snapshot || settings?.company_address || DEFAULT_SELLER.company_address;
+
+  const logoData = settings?.logo_url && settings.logo_url.startsWith('data:') ? settings.logo_url : null;
+  if (logoData) {
+    try {
+      const props = doc.getImageProperties(logoData);
+      const maxW = 30;
+      const maxH = 18;
+      const scale = Math.min(maxW / props.width, maxH / props.height);
+      const w = props.width * scale;
+      const h = props.height * scale;
+      doc.addImage(logoData, props.fileType, margin + 3, y + 1, w, h);
+    } catch (err) {
+      console.warn('Failed to draw logo image in PDF:', err);
+    }
+  }
 
   if (companyName) {
     doc.setFont('helvetica', 'bold');
@@ -138,9 +154,9 @@ export function generateInvoicePDF(
   doc.setTextColor(0, 0, 0);
 
   const companyGstin = invoice.company_gstin_snapshot || settings?.company_gstin || '';
-  const bankName = invoice.bank_name_snapshot || settings?.bank_name || '';
-  const accNo = invoice.account_number_snapshot || settings?.account_number || '';
-  const ifsc = invoice.ifsc_code_snapshot || settings?.ifsc_code || '';
+  const bankName = invoice.bank_name_snapshot || settings?.bank_name || DEFAULT_SELLER.bank_name;
+  const accNo = invoice.account_number_snapshot || settings?.account_number || DEFAULT_SELLER.account_number;
+  const ifsc = invoice.ifsc_code_snapshot || settings?.ifsc_code || DEFAULT_SELLER.ifsc_code;
   
   const stripParts: string[] = [];
   if (companyGstin) stripParts.push(`GSTIN No.: ${companyGstin}`);
@@ -169,7 +185,7 @@ export function generateInvoicePDF(
       item.hsn_sac_snapshot || '',
       hasValues ? item.qty.toString() : '',
       hasValues ? formatNumberForPDF(item.rate) : '',
-      hasValues ? `${item.gst_percentage}%` : '',
+      hasValues ? (invoice.gst_type === 'none' ? '-' : `${item.gst_percentage}%`) : '',
       hasValues ? formatNumberForPDF(item.taxable_amount) : '',
     ];
   });
@@ -200,7 +216,7 @@ export function generateInvoicePDF(
       { content: `SGST (${halfGstRate > 0 ? halfGstRate : 9}%)`, colSpan: 6, styles: { halign: 'right', fontStyle: 'bold' } },
       { content: formatNumberForPDF(invoice.sgst), styles: { halign: 'right' } },
     ]);
-  } else {
+  } else if (invoice.gst_type === 'igst') {
     footRows.push([
       { content: `IGST (${fullGstRate > 0 ? fullGstRate : 18}%)`, colSpan: 6, styles: { halign: 'right', fontStyle: 'bold' } },
       { content: formatNumberForPDF(invoice.igst), styles: { halign: 'right' } },
@@ -214,7 +230,7 @@ export function generateInvoicePDF(
 
   autoTable(doc, {
     startY: y,
-    head: [['Sr. No.', 'Product Name', 'HSN/SAC', 'Qty', 'Rate', 'GST %', 'Amount']],
+    head: [['Sr. No.', 'Product Name', 'HSN/SAC', 'Qty/Tan', 'Rate', 'GST %', 'Amount']],
     body: tableData,
     foot: footRows,
     theme: 'grid',
@@ -273,19 +289,22 @@ export function generateInvoicePDF(
 
   // Amount in words
   doc.setFontSize(8);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Total GST in Words:', leftXBottom, y + 3);
-  doc.setFont('helvetica', 'normal');
-  const gstWords = invoice.gst_in_words || amountToWords(invoice.total_gst);
-  doc.text(gstWords, leftXBottom + 35, y + 3);
+  if (invoice.gst_type !== 'none') {
+    doc.setFont('helvetica', 'bold');
+    doc.text('Total GST in Words:', leftXBottom, y + 3);
+    doc.setFont('helvetica', 'normal');
+    const gstWords = invoice.gst_in_words || amountToWords(invoice.total_gst);
+    doc.text(gstWords, leftXBottom + 35, y + 3);
+    y += 5;
+  }
 
   doc.setFont('helvetica', 'bold');
-  doc.text('Bill Amount in Words:', leftXBottom, y + 8);
+  doc.text('Bill Amount in Words:', leftXBottom, y + 3);
   doc.setFont('helvetica', 'normal');
   const amtWords = invoice.amount_in_words || amountToWords(invoice.grand_total);
-  doc.text(amtWords, leftXBottom + 35, y + 8);
+  doc.text(amtWords, leftXBottom + 35, y + 3);
 
-  y += 14;
+  y += 9;
 
   // Terms & Conditions
   doc.setFont('helvetica', 'bold');
@@ -327,13 +346,19 @@ export function generateInvoicePDF(
       ? settings.signature_url
       : DEFAULT_SIGNATURE_BASE64;
 
+  const signMaxW = 50;
+  const signMaxH = 26;
   try {
-    doc.addImage(signatureData, 'PNG', rightSignX - 22, signY, 44, 16);
+    const props = doc.getImageProperties(signatureData);
+    const scale = Math.min(signMaxW / props.width, signMaxH / props.height);
+    const w = props.width * scale;
+    const h = props.height * scale;
+    doc.addImage(signatureData, props.fileType, rightSignX - w / 2, signY + (signMaxH - h) / 2, w, h);
   } catch (err) {
     console.warn('Failed to draw signature image in PDF:', err);
   }
 
-  signY += 18;
+  signY += signMaxH + 2;
   doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
   doc.text('(Authorised Signatory)', rightSignX, signY, { align: 'center' });

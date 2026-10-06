@@ -3,11 +3,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/app/(dashboard)/layout';
-import { Customer, Product, InvoiceFormData, InvoiceItemFormData, CompanyProfile } from '@/types';
+import { Customer, Product, InvoiceFormData, InvoiceItemFormData, GstType } from '@/types';
 import { calculateInvoiceTotals } from '@/lib/gst';
 import { amountToWords } from '@/lib/number-to-words';
-import { formatCurrency, getTodayISO, parseNumeric, roundTo2 } from '@/lib/utils';
-import { DataStore } from '@/lib/data-store';
+import { formatCurrency, getNextInvoiceNo, getTodayISO, parseNumeric, roundTo2 } from '@/lib/utils';
+import { DataStore, DEFAULT_SELLER } from '@/lib/data-store';
 
 interface InvoiceFormProps {
   mode: 'create' | 'edit';
@@ -31,12 +31,7 @@ export default function InvoiceForm({ mode, invoiceId, duplicateFrom }: InvoiceF
   const { showToast } = useToast();
 
   const [formData, setFormData] = useState<InvoiceFormData>({
-    company_name: '',
-    company_address: '',
-    company_gstin: '',
-    bank_name: '',
-    account_number: '',
-    ifsc_code: '',
+    ...DEFAULT_SELLER,
     save_company_profile: true,
     customer_id: null,
     customer_name: '',
@@ -51,7 +46,6 @@ export default function InvoiceForm({ mode, invoiceId, duplicateFrom }: InvoiceF
     items: [{ ...emptyItem }],
   });
 
-  const [companyProfiles, setCompanyProfiles] = useState<CompanyProfile[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [customerSearch, setCustomerSearch] = useState('');
@@ -65,41 +59,6 @@ export default function InvoiceForm({ mode, invoiceId, duplicateFrom }: InvoiceF
   const customerRef = useRef<HTMLDivElement>(null);
   const productRef = useRef<HTMLDivElement>(null);
 
-  const fetchCompaniesAndSettings = async () => {
-    try {
-      const profiles = await DataStore.getCompanyProfiles();
-      setCompanyProfiles(profiles || []);
-
-      if (mode === 'create' && !duplicateFrom) {
-        const settings = await DataStore.getSettings();
-        if (profiles && profiles.length > 0) {
-          const first = profiles[0];
-          setFormData((prev) => ({
-            ...prev,
-            company_name: prev.company_name || first.company_name || '',
-            company_address: prev.company_address || first.company_address || '',
-            company_gstin: prev.company_gstin || first.company_gstin || '',
-            bank_name: prev.bank_name || first.bank_name || '',
-            account_number: prev.account_number || first.account_number || '',
-            ifsc_code: prev.ifsc_code || first.ifsc_code || '',
-          }));
-        } else if (settings && settings.company_name) {
-          setFormData((prev) => ({
-            ...prev,
-            company_name: prev.company_name || settings.company_name || '',
-            company_address: prev.company_address || settings.company_address || '',
-            company_gstin: prev.company_gstin || settings.company_gstin || '',
-            bank_name: prev.bank_name || settings.bank_name || '',
-            account_number: prev.account_number || settings.account_number || '',
-            ifsc_code: prev.ifsc_code || settings.ifsc_code || '',
-          }));
-        }
-      }
-    } catch (e) {
-      console.warn('Could not load company profiles:', e);
-    }
-  };
-
   const fetchCustomers = async () => {
     const data = await DataStore.getCustomers();
     setCustomers(data || []);
@@ -110,13 +69,22 @@ export default function InvoiceForm({ mode, invoiceId, duplicateFrom }: InvoiceF
     setProducts(data || []);
   };
 
+  const fillNextInvoiceNo = async () => {
+    try {
+      const invoices = await DataStore.getInvoices();
+      const nextNo = getNextInvoiceNo((invoices || []).map((inv) => inv.invoice_no));
+      setFormData((prev) => (prev.invoice_no ? prev : { ...prev, invoice_no: nextNo }));
+    } catch (e) {
+      console.warn('Could not compute next invoice number:', e);
+    }
+  };
+
   const fetchInvoice = async (id: string, isDuplicate = false) => {
     try {
       const invData = await DataStore.getInvoice(id);
       if (!invData) throw new Error('Invoice not found');
 
       const { invoice, items } = invData;
-      const settings = await DataStore.getSettings();
 
       const formItems: InvoiceItemFormData[] = (items || []).map((item) => ({
         id: isDuplicate ? undefined : item.id,
@@ -131,12 +99,7 @@ export default function InvoiceForm({ mode, invoiceId, duplicateFrom }: InvoiceF
       }));
 
       setFormData({
-        company_name: invoice.company_name_snapshot ?? settings?.company_name ?? '',
-        company_address: invoice.company_address_snapshot ?? settings?.company_address ?? '',
-        company_gstin: invoice.company_gstin_snapshot ?? settings?.company_gstin ?? '',
-        bank_name: invoice.bank_name_snapshot ?? settings?.bank_name ?? '',
-        account_number: invoice.account_number_snapshot ?? settings?.account_number ?? '',
-        ifsc_code: invoice.ifsc_code_snapshot ?? settings?.ifsc_code ?? '',
+        ...DEFAULT_SELLER,
         save_company_profile: false,
         customer_id: invoice.customer_id,
         customer_name: invoice.customer_name_snapshot,
@@ -162,12 +125,13 @@ export default function InvoiceForm({ mode, invoiceId, duplicateFrom }: InvoiceF
   useEffect(() => {
     fetchCustomers();
     fetchProducts();
-    fetchCompaniesAndSettings();
 
     if (mode === 'edit' && invoiceId) {
       fetchInvoice(invoiceId);
     } else if (duplicateFrom) {
-      fetchInvoice(duplicateFrom, true);
+      fetchInvoice(duplicateFrom, true).then(fillNextInvoiceNo);
+    } else {
+      fillNextInvoiceNo();
     }
   }, []);
 
@@ -401,139 +365,10 @@ export default function InvoiceForm({ mode, invoiceId, duplicateFrom }: InvoiceF
 
   return (
     <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-      {/* Seller / Billed From Details (Editable per invoice) */}
-      <div className="card" style={{ marginBottom: '1.5rem', borderLeft: '4px solid var(--primary)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
-          <div>
-            <h3 className="card-title" style={{ margin: 0 }}>
-              Seller / Billed From
-            </h3>
-            <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', margin: '0.25rem 0 0 0' }}>
-              Select or manually type the billing firm name and details for this invoice
-            </p>
-          </div>
-          {companyProfiles.length > 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text-secondary)' }}>Saved firm</span>
-              <select
-                className="form-input form-select"
-                style={{ width: 'auto', minWidth: '180px', padding: '0.35rem 0.65rem', fontSize: '0.8125rem' }}
-                onChange={(e) => {
-                  const selected = companyProfiles.find((c) => c.id === e.target.value);
-                  if (selected) {
-                    setFormData((prev) => ({
-                      ...prev,
-                      company_name: selected.company_name,
-                      company_address: selected.company_address,
-                      company_gstin: selected.company_gstin || '',
-                      bank_name: selected.bank_name || '',
-                      account_number: selected.account_number || '',
-                      ifsc_code: selected.ifsc_code || '',
-                    }));
-                  }
-                }}
-                defaultValue=""
-              >
-                <option value="" disabled>-- Select Saved Firm --</option>
-                {companyProfiles.map((c) => (
-                  <option key={c.id} value={c.id}>{c.company_name}</option>
-                ))}
-              </select>
-            </div>
-          )}
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
-          <div className="form-group">
-            <label className="form-label">Firm / Company Name *</label>
-            <input
-              type="text"
-              className="form-input"
-              value={formData.company_name}
-              onChange={(e) => setFormData((prev) => ({ ...prev, company_name: e.target.value }))}
-              placeholder="e.g. YOUR FIRM / COMPANY NAME"
-            />
-            {errors.company_name && <div className="form-error">{errors.company_name}</div>}
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Firm GSTIN No.</label>
-            <input
-              type="text"
-              className="form-input"
-              value={formData.company_gstin}
-              onChange={(e) => setFormData((prev) => ({ ...prev, company_gstin: e.target.value }))}
-              placeholder="e.g. 24XXXXXXXXXXXXX"
-            />
-          </div>
-
-          <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-            <label className="form-label">Firm Address *</label>
-            <textarea
-              className="form-input form-textarea"
-              value={formData.company_address}
-              onChange={(e) => setFormData((prev) => ({ ...prev, company_address: e.target.value }))}
-              placeholder="Firm address (shop, street, city, pin code)..."
-              rows={2}
-            />
-            {errors.company_address && <div className="form-error">{errors.company_address}</div>}
-          </div>
-        </div>
-
-        {/* Bank Details section */}
-        <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px dashed var(--border)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-            <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-              Bank details
-            </span>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8125rem', cursor: 'pointer', color: 'var(--primary)' }}>
-              <input
-                type="checkbox"
-                checked={formData.save_company_profile !== false}
-                onChange={(e) => setFormData((prev) => ({ ...prev, save_company_profile: e.target.checked }))}
-              />
-              Remember this firm for future invoices
-            </label>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-            <div className="form-group">
-              <label className="form-label">Bank Name</label>
-              <input
-                type="text"
-                className="form-input"
-                value={formData.bank_name}
-                onChange={(e) => setFormData((prev) => ({ ...prev, bank_name: e.target.value }))}
-                placeholder="e.g. KOTAK BANK / SBI"
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">A/C No.</label>
-              <input
-                type="text"
-                className="form-input"
-                value={formData.account_number}
-                onChange={(e) => setFormData((prev) => ({ ...prev, account_number: e.target.value }))}
-                placeholder="e.g. 1612991878"
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">IFSC Code</label>
-              <input
-                type="text"
-                className="form-input"
-                value={formData.ifsc_code}
-                onChange={(e) => setFormData((prev) => ({ ...prev, ifsc_code: e.target.value }))}
-                placeholder="e.g. KKBK002016"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Customer Details */}
       <div className="card" style={{ marginBottom: '1.5rem' }}>
         <h3 className="card-title" style={{ marginBottom: '1rem' }}>Customer / Billed to</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(, 100%), 1fr))', gap: '1rem' }}>
           <div className="form-group" ref={customerRef}>
             <label className="form-label">M/s. / Customer Name *</label>
             <div className="autocomplete-wrapper">
@@ -610,7 +445,7 @@ export default function InvoiceForm({ mode, invoiceId, duplicateFrom }: InvoiceF
       {/* Invoice Details */}
       <div className="card" style={{ marginBottom: '1.5rem' }}>
         <h3 className="card-title" style={{ marginBottom: '1rem' }}>📑 Invoice Details</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(, 100%), 1fr))', gap: '1rem' }}>
           <div className="form-group">
             <label className="form-label">Invoice No. *</label>
             <input
@@ -618,7 +453,7 @@ export default function InvoiceForm({ mode, invoiceId, duplicateFrom }: InvoiceF
               className="form-input"
               value={formData.invoice_no}
               onChange={(e) => setFormData((prev) => ({ ...prev, invoice_no: e.target.value }))}
-              placeholder="e.g., INV-001"
+              placeholder="e.g., EIG/2627/351"
             />
             {errors.invoice_no && <div className="form-error">{errors.invoice_no}</div>}
           </div>
@@ -662,11 +497,12 @@ export default function InvoiceForm({ mode, invoiceId, duplicateFrom }: InvoiceF
               value={formData.gst_type}
               onChange={(e) => setFormData((prev) => ({
                 ...prev,
-                gst_type: e.target.value as 'cgst_sgst' | 'igst',
+                gst_type: e.target.value as GstType,
               }))}
             >
-              <option value="cgst_sgst">CGST + SGST (Intra-State)</option>
-              <option value="igst">IGST (Inter-State)</option>
+              <option value="cgst_sgst">SGST</option>
+              <option value="igst">IGST</option>
+              <option value="none">None</option>
             </select>
           </div>
         </div>
@@ -710,8 +546,8 @@ export default function InvoiceForm({ mode, invoiceId, duplicateFrom }: InvoiceF
                 )}
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem' }}>
-                <div className="form-group" style={{ gridColumn: 'span 2' }} ref={productSearchIndex === index ? productRef : undefined}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(, 100%), 1fr))', gap: '0.75rem' }}>
+                <div className="form-group grid-span-2" ref={productSearchIndex === index ? productRef : undefined}>
                   <label className="form-label">Product Name *</label>
                   <div className="autocomplete-wrapper">
                     <input
@@ -782,7 +618,7 @@ export default function InvoiceForm({ mode, invoiceId, duplicateFrom }: InvoiceF
 
                 <div className="form-group">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
-                    <label className="form-label" style={{ margin: 0 }}>Qty *</label>
+                    <label className="form-label" style={{ margin: 0 }}>Qty/Tan *</label>
                     {item.available_stock !== undefined && item.available_stock !== null && (
                       <span style={{
                         fontSize: '0.75rem',
@@ -892,12 +728,12 @@ export default function InvoiceForm({ mode, invoiceId, duplicateFrom }: InvoiceF
                 <span>{formatCurrency(totals.sgst)}</span>
               </div>
             </>
-          ) : (
+          ) : formData.gst_type === 'igst' ? (
             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', fontSize: '0.875rem' }}>
               <span style={{ color: 'var(--text-secondary)' }}>IGST</span>
               <span>{formatCurrency(totals.igst)}</span>
             </div>
-          )}
+          ) : null}
 
           <div style={{
             display: 'flex',
@@ -915,12 +751,14 @@ export default function InvoiceForm({ mode, invoiceId, duplicateFrom }: InvoiceF
 
         <div style={{ marginTop: '1rem', fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
           <p><strong>Amount in words:</strong> {amountToWords(totals.grandTotal)}</p>
-          <p style={{ marginTop: '0.25rem' }}><strong>Total GST in words:</strong> {amountToWords(totals.totalGst)}</p>
+          {formData.gst_type !== 'none' && (
+            <p style={{ marginTop: '0.25rem' }}><strong>Total GST in words:</strong> {amountToWords(totals.totalGst)}</p>
+          )}
         </div>
       </div>
 
       {/* Save Button */}
-      <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginBottom: '2rem' }}>
+      <div className="action-bar">
         <button
           type="button"
           className="btn btn-secondary"

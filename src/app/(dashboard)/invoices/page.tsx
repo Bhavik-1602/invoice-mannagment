@@ -185,7 +185,7 @@ function InvoicesContent() {
     <div>
       {/* Search & Filters */}
       <div className="card" style={{ marginBottom: '1.5rem' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem', alignItems: 'end' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(, 100%), 1fr))', gap: '0.75rem', alignItems: 'end' }}>
           <div className="form-group" style={{ margin: 0 }}>
             <label className="form-label">Search</label>
             <input
@@ -235,8 +235,9 @@ function InvoicesContent() {
               onChange={(e) => setFilterGstType(e.target.value)}
             >
               <option value="">All</option>
-              <option value="cgst_sgst">CGST + SGST</option>
+              <option value="cgst_sgst">SGST</option>
               <option value="igst">IGST</option>
+              <option value="none">None</option>
             </select>
           </div>
           <button className="btn btn-secondary btn-sm" onClick={clearFilters} style={{ height: '38px' }}>
