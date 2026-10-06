@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useToast } from '@/app/(dashboard)/layout';
 import { CompanySettings, TermCondition } from '@/types';
 import { DataStore, isSupabaseConfigured } from '@/lib/data-store';
+import { IconTrash } from '@/components/Icons';
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<CompanySettings | null>(null);
@@ -63,8 +64,8 @@ export default function SettingsPage() {
       });
       setSettings(updated);
       showToast('Settings saved successfully', 'success');
-    } catch {
-      showToast('Failed to save settings', 'error');
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to save settings', 'error');
     } finally {
       setSaving(false);
     }
@@ -146,33 +147,18 @@ export default function SettingsPage() {
   return (
     <div style={{ maxWidth: '800px' }}>
       {/* Database Connection Status Banner */}
-      <div
-        style={{
-          padding: '0.875rem 1.25rem',
-          borderRadius: '0.5rem',
-          marginBottom: '1.5rem',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          backgroundColor: isCloud ? 'rgba(34, 197, 94, 0.1)' : 'rgba(234, 179, 8, 0.1)',
-          border: `1px solid ${isCloud ? 'rgba(34, 197, 94, 0.3)' : 'rgba(234, 179, 8, 0.3)'}`,
-        }}
-      >
-        <div>
-          <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>
-            {isCloud ? '🟢 Supabase Cloud Connected' : '🟡 Test Data Active (Local Ready)'}
-          </span>
-          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-            {isCloud
-              ? 'Invoices, customers, and products are synced directly with your Supabase database.'
-              : 'Sample TAX INVOICE format & handwritten signature are loaded. You can test immediately and download PDFs!'}
-          </p>
-        </div>
+      <div className={`status-banner ${isCloud ? 'is-online' : 'is-local'}`}>
+        <div className="status-title">{isCloud ? 'Cloud connected' : 'Local data'}</div>
+        <p>
+          {isCloud
+            ? 'Invoices, customers, and products sync with your database.'
+            : 'Sample invoice data is loaded on this device. You can create invoices and download PDFs.'}
+        </p>
       </div>
 
       {/* Company Information */}
       <div className="card" style={{ marginBottom: '1.5rem' }}>
-        <h3 className="card-title" style={{ marginBottom: '1rem' }}>🏢 Company Information</h3>
+        <h3 className="card-title" style={{ marginBottom: '1rem' }}>Company information</h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
           <div className="form-group">
             <label className="form-label">Company Name</label>
@@ -206,7 +192,7 @@ export default function SettingsPage() {
 
       {/* Bank Details */}
       <div className="card" style={{ marginBottom: '1.5rem' }}>
-        <h3 className="card-title" style={{ marginBottom: '1rem' }}>🏦 Bank Details</h3>
+        <h3 className="card-title" style={{ marginBottom: '1rem' }}>Bank details</h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
           <div className="form-group">
             <label className="form-label">Bank Name</label>
@@ -243,14 +229,14 @@ export default function SettingsPage() {
             onClick={handleSaveSettings}
             disabled={saving}
           >
-            {saving ? 'Saving...' : '💾 Save Changes'}
+            {saving ? 'Saving...' : 'Save changes'}
           </button>
         </div>
       </div>
 
       {/* Terms & Conditions */}
       <div className="card" style={{ marginBottom: '1.5rem' }}>
-        <h3 className="card-title" style={{ marginBottom: '1rem' }}>📝 Terms & Conditions</h3>
+        <h3 className="card-title" style={{ marginBottom: '1rem' }}>Terms and conditions</h3>
 
         {terms.map((term, index) => (
           <div
@@ -285,11 +271,12 @@ export default function SettingsPage() {
               style={{ flex: 1, opacity: term.is_active ? 1 : 0.5 }}
             />
             <button
-              className="btn btn-ghost btn-sm"
+              className="icon-btn icon-btn-danger"
               onClick={() => handleDeleteTerm(term.id)}
-              style={{ color: 'var(--error)' }}
+              title="Remove term"
+              aria-label="Remove term"
             >
-              🗑
+              <IconTrash size={16} />
             </button>
           </div>
         ))}
@@ -312,7 +299,7 @@ export default function SettingsPage() {
 
       {/* Signature & Logo Upload */}
       <div className="card" style={{ marginBottom: '2rem' }}>
-        <h3 className="card-title" style={{ marginBottom: '1rem' }}>🖊 Signature & Logo</h3>
+        <h3 className="card-title" style={{ marginBottom: '1rem' }}>Signature and logo</h3>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
           <div>
             <label className="form-label">Authorised Signatory</label>

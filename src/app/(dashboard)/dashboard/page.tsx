@@ -5,6 +5,7 @@ import { formatCurrency, formatDate } from '@/lib/utils';
 import Link from 'next/link';
 import { Invoice } from '@/types';
 import { DataStore } from '@/lib/data-store';
+import { IconEdit, IconEye, IconInvoices } from '@/components/Icons';
 
 export default function DashboardPage() {
   const [stats, setStats] = useState({
@@ -66,12 +67,7 @@ export default function DashboardPage() {
   return (
     <div>
       {/* Stats Cards */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-        gap: '1rem',
-        marginBottom: '1.5rem',
-      }}>
+      <div className="stats-grid">
         <div className="stat-card">
           <div className="stat-card-label">Total Invoices</div>
           <div className="stat-card-value">{stats.totalInvoices}</div>
@@ -86,7 +82,7 @@ export default function DashboardPage() {
         </div>
         <Link href="/products" style={{ textDecoration: 'none', color: 'inherit' }}>
           <div className="stat-card" style={{ cursor: 'pointer', transition: 'border-color 0.2s' }}>
-            <div className="stat-card-label">📦 Stock on Hand</div>
+            <div className="stat-card-label">Stock on Hand</div>
             <div className="stat-card-value" style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
               <span>{stats.totalStockUnits.toLocaleString()}</span>
               {stats.lowStockCount > 0 && (
@@ -110,11 +106,11 @@ export default function DashboardPage() {
 
         {recentInvoices.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-state-icon">📄</div>
+            <div className="empty-state-icon"><IconInvoices size={22} /></div>
             <div className="empty-state-title">No invoices yet</div>
             <div className="empty-state-text">Create your first invoice to get started</div>
             <Link href="/invoices/new" className="btn btn-primary">
-              + New Invoice
+              New Invoice
             </Link>
           </div>
         ) : (
@@ -137,12 +133,12 @@ export default function DashboardPage() {
                     <td>{formatDate(inv.invoice_date)}</td>
                     <td style={{ fontWeight: 500 }}>{formatCurrency(inv.grand_total)}</td>
                     <td>
-                      <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <Link href={`/invoices/${inv.id}`} className="btn btn-ghost btn-sm" title="View">
-                          👁
+                      <div className="row-actions">
+                        <Link href={`/invoices/${inv.id}`} className="icon-btn" title="View" aria-label="View">
+                          <IconEye size={16} />
                         </Link>
-                        <Link href={`/invoices/${inv.id}/edit`} className="btn btn-ghost btn-sm" title="Edit">
-                          ✏️
+                        <Link href={`/invoices/${inv.id}/edit`} className="icon-btn" title="Edit" aria-label="Edit">
+                          <IconEdit size={16} />
                         </Link>
                       </div>
                     </td>

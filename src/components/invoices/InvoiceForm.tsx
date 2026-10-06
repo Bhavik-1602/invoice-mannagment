@@ -405,8 +405,8 @@ export default function InvoiceForm({ mode, invoiceId, duplicateFrom }: InvoiceF
       <div className="card" style={{ marginBottom: '1.5rem', borderLeft: '4px solid var(--primary)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
           <div>
-            <h3 className="card-title" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span>🏢</span> Seller / Billed From (बिल बनाने वाली फर्म / कंपनी)
+            <h3 className="card-title" style={{ margin: 0 }}>
+              Seller / Billed From
             </h3>
             <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', margin: '0.25rem 0 0 0' }}>
               Select or manually type the billing firm name and details for this invoice
@@ -414,7 +414,7 @@ export default function InvoiceForm({ mode, invoiceId, duplicateFrom }: InvoiceF
           </div>
           {companyProfiles.length > 0 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text-secondary)' }}>⚡ Quick Select Firm:</span>
+              <span style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text-secondary)' }}>Saved firm</span>
               <select
                 className="form-input form-select"
                 style={{ width: 'auto', minWidth: '180px', padding: '0.35rem 0.65rem', fontSize: '0.8125rem' }}
@@ -484,7 +484,7 @@ export default function InvoiceForm({ mode, invoiceId, duplicateFrom }: InvoiceF
         <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px dashed var(--border)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
             <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-              🏦 Bank Details (Appears on Invoice Header Strip)
+              Bank details
             </span>
             <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8125rem', cursor: 'pointer', color: 'var(--primary)' }}>
               <input
@@ -532,7 +532,7 @@ export default function InvoiceForm({ mode, invoiceId, duplicateFrom }: InvoiceF
 
       {/* Customer Details */}
       <div className="card" style={{ marginBottom: '1.5rem' }}>
-        <h3 className="card-title" style={{ marginBottom: '1rem' }}>📋 Customer / Billed To</h3>
+        <h3 className="card-title" style={{ marginBottom: '1rem' }}>Customer / Billed to</h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
           <div className="form-group" ref={customerRef}>
             <label className="form-label">M/s. / Customer Name *</label>
@@ -675,7 +675,7 @@ export default function InvoiceForm({ mode, invoiceId, duplicateFrom }: InvoiceF
       {/* Items Table */}
       <div className="card" style={{ marginBottom: '1.5rem' }}>
         <div className="card-header">
-          <h3 className="card-title">📦 Items / Products</h3>
+          <h3 className="card-title">Items</h3>
           <button type="button" className="btn btn-primary btn-sm" onClick={addItem}>
             + Add Item
           </button>
@@ -705,7 +705,7 @@ export default function InvoiceForm({ mode, invoiceId, duplicateFrom }: InvoiceF
                     style={{ color: 'var(--error)' }}
                     title="Remove item"
                   >
-                    🗑 Remove
+                    Remove
                   </button>
                 )}
               </div>
@@ -804,7 +804,7 @@ export default function InvoiceForm({ mode, invoiceId, duplicateFrom }: InvoiceF
                   />
                   {item.available_stock !== undefined && item.available_stock !== null && parseNumeric(item.qty) > Number(item.available_stock) && (
                     <div style={{ fontSize: '0.75rem', color: 'var(--warning)', marginTop: '0.25rem', fontWeight: 500 }}>
-                      ⚠️ Exceeds stock ({item.available_stock} {item.unit || 'Pcs'})
+                      Exceeds stock ({item.available_stock} {item.unit || 'Pcs'})
                     </div>
                   )}
                   {errors[`item_${index}_qty`] && <div className="form-error">{errors[`item_${index}_qty`]}</div>}
@@ -941,7 +941,7 @@ export default function InvoiceForm({ mode, invoiceId, duplicateFrom }: InvoiceF
               Saving...
             </>
           ) : (
-            mode === 'edit' ? '💾 Update Invoice' : '💾 Save Invoice'
+            mode === 'edit' ? 'Update Invoice' : 'Save Invoice'
           )}
         </button>
       </div>

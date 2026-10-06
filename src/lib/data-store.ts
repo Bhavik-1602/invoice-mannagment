@@ -175,6 +175,14 @@ function setLocalItem<T>(key: string, val: T): void {
   }
 }
 
+function assertOk(error: { message: string } | null) {
+  if (error) throw new Error(error.message);
+}
+
+function isUuid(value?: string | null): value is string {
+  return !!value && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
 export function initializeLocalStoreIfNeeded(): void {
   if (typeof window === 'undefined') return;
   if (!localStorage.getItem('inv_settings')) {
@@ -246,51 +254,81 @@ export const DataStore = {
   },
 
   async getSettings(): Promise<CompanySettings> {
-    initializeLocalStoreIfNeeded();
     if (isSupabaseConfigured()) {
-      try {
-        const supabase = createClient();
-        const { data, error } = await supabase.from('company_settings').select('*').single();
-        if (!error && data) return data;
-      } catch (e) {
-        console.warn('Supabase getSettings failed, using local fallback:', e);
-      }
+      const supabase = createClient();
+      const { data, error } = await supabase.from('company_settings').select('*').limit(1).maybeSingle();
+      assertOk(error);
+      if (data) return data;
+      return { ...SEED_SETTINGS, company_name: '', company_address: '', company_gstin: '', bank_name: '', account_number: '', ifsc_code: '' };
     }
+    initializeLocalStoreIfNeeded();
     return getLocalItem('inv_settings', SEED_SETTINGS);
   },
 
   async updateSettings(updates: Partial<CompanySettings>): Promise<CompanySettings> {
+    if (isSupabaseConfigured()) {
+      const supabase = createClient();
+      const { data: existing, error: readError } = await supabase.from('company_settings').select('id').limit(1).maybeSingle();
+      assertOk(readError);
+      const payload = {
+        company_name: updates.company_name,
+        company_address: updates.company_address,
+        company_gstin: updates.company_gstin,
+        bank_name: updates.bank_name,
+        account_number: updates.account_number,
+        ifsc_code: updates.ifsc_code,
+        logo_url: updates.logo_url,
+        signature_url: updates.signature_url,
+      };
+      const definedPayload = Object.fromEntries(Object.entries(payload).filter(([, value]) => value !== undefined));
+      if (existing?.id) {
+        const { data, error } = await supabase.from('company_settings').update(definedPayload).eq('id', existing.id).select().single();
+        assertOk(error);
+        return data;
+      }
+      const { data, error } = await supabase.from('company_settings').insert(definedPayload).select().single();
+      assertOk(error);
+      return data;
+    }
+
     initializeLocalStoreIfNeeded();
     let current = getLocalItem('inv_settings', SEED_SETTINGS);
     current = { ...current, ...updates, updated_at: new Date().toISOString() };
     setLocalItem('inv_settings', current);
-
-    if (isSupabaseConfigured()) {
-      try {
-        const supabase = createClient();
-        await supabase.from('company_settings').update(updates).eq('id', current.id);
-      } catch (e) {
-        console.warn('Supabase updateSettings failed:', e);
-      }
-    }
     return current;
   },
 
   async getCustomers(): Promise<Customer[]> {
-    initializeLocalStoreIfNeeded();
     if (isSupabaseConfigured()) {
-      try {
-        const supabase = createClient();
-        const { data, error } = await supabase.from('customers').select('*').order('customer_name');
-        if (!error && data && data.length > 0) return data;
-      } catch (e) {
-        console.warn('Supabase getCustomers failed, using local fallback:', e);
-      }
+      const supabase = createClient();
+      const { data, error } = await supabase.from('customers').select('*').order('customer_name');
+      assertOk(error);
+      return data || [];
     }
+    initializeLocalStoreIfNeeded();
     return getLocalItem('inv_customers', SEED_CUSTOMERS);
   },
 
   async saveCustomer(customer: Partial<Customer>): Promise<Customer> {
+    const payload = {
+      customer_name: customer.customer_name || '',
+      address: customer.address || '',
+      place_of_supply: customer.place_of_supply || '',
+      gstin: customer.gstin || null,
+    };
+
+    if (isSupabaseConfigured()) {
+      const supabase = createClient();
+      if (isUuid(customer.id)) {
+        const { data, error } = await supabase.from('customers').update(payload).eq('id', customer.id).select().single();
+        assertOk(error);
+        return data;
+      }
+      const { data, error } = await supabase.from('customers').insert(payload).select().single();
+      assertOk(error);
+      return data;
+    }
+
     initializeLocalStoreIfNeeded();
     const customers = getLocalItem<Customer[]>('inv_customers', SEED_CUSTOMERS);
     let saved: Customer;
@@ -303,62 +341,62 @@ export const DataStore = {
       saved = {
         id: `cust-${Date.now()}`,
         user_id: 'default-user',
-        customer_name: customer.customer_name || '',
-        address: customer.address || '',
-        place_of_supply: customer.place_of_supply || '',
-        gstin: customer.gstin || null,
+        ...payload,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
       setLocalItem('inv_customers', [...customers, saved]);
     }
 
-    if (isSupabaseConfigured()) {
-      try {
-        const supabase = createClient();
-        if (customer.id) {
-          await supabase.from('customers').update(customer).eq('id', customer.id);
-        } else {
-          await supabase.from('customers').insert(saved);
-        }
-      } catch (e) {
-        console.warn('Supabase saveCustomer failed:', e);
-      }
-    }
-
     return saved;
   },
 
   async deleteCustomer(id: string): Promise<void> {
+    if (isSupabaseConfigured()) {
+      const supabase = createClient();
+      const { error } = await supabase.from('customers').delete().eq('id', id);
+      assertOk(error);
+      return;
+    }
     initializeLocalStoreIfNeeded();
     const customers = getLocalItem<Customer[]>('inv_customers', SEED_CUSTOMERS);
     setLocalItem('inv_customers', customers.filter((c) => c.id !== id));
-
-    if (isSupabaseConfigured()) {
-      try {
-        const supabase = createClient();
-        await supabase.from('customers').delete().eq('id', id);
-      } catch (e) {
-        console.warn('Supabase deleteCustomer failed:', e);
-      }
-    }
   },
 
   async getProducts(): Promise<Product[]> {
-    initializeLocalStoreIfNeeded();
     if (isSupabaseConfigured()) {
-      try {
-        const supabase = createClient();
-        const { data, error } = await supabase.from('products').select('*').order('product_name');
-        if (!error && data && data.length > 0) return data;
-      } catch (e) {
-        console.warn('Supabase getProducts failed, using local fallback:', e);
-      }
+      const supabase = createClient();
+      const { data, error } = await supabase.from('products').select('*').order('product_name');
+      assertOk(error);
+      return data || [];
     }
+    initializeLocalStoreIfNeeded();
     return getLocalItem('inv_products', SEED_PRODUCTS);
   },
 
   async saveProduct(product: Partial<Product>): Promise<Product> {
+    const payload = {
+      product_name: product.product_name || '',
+      description: product.description || null,
+      hsn_sac: product.hsn_sac || null,
+      default_rate: Number(product.default_rate) || 0,
+      gst_percentage: Number(product.gst_percentage) || 18,
+      stock_quantity: Number(product.stock_quantity) || 0,
+      unit: product.unit || 'PCS',
+    };
+
+    if (isSupabaseConfigured()) {
+      const supabase = createClient();
+      if (isUuid(product.id)) {
+        const { data, error } = await supabase.from('products').update(payload).eq('id', product.id).select().single();
+        assertOk(error);
+        return data;
+      }
+      const { data, error } = await supabase.from('products').insert(payload).select().single();
+      assertOk(error);
+      return data;
+    }
+
     initializeLocalStoreIfNeeded();
     const products = getLocalItem<Product[]>('inv_products', SEED_PRODUCTS);
     let saved: Product;
@@ -371,79 +409,51 @@ export const DataStore = {
       saved = {
         id: `prod-${Date.now()}`,
         user_id: 'default-user',
-        product_name: product.product_name || '',
-        description: product.description || null,
-        hsn_sac: product.hsn_sac || null,
-        default_rate: Number(product.default_rate) || 0,
-        gst_percentage: Number(product.gst_percentage) || 18,
-        stock_quantity: Number(product.stock_quantity) || 0,
-        unit: product.unit || 'PCS',
+        ...payload,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
       setLocalItem('inv_products', [...products, saved]);
     }
 
-    if (isSupabaseConfigured()) {
-      try {
-        const supabase = createClient();
-        if (product.id) {
-          await supabase.from('products').update(product).eq('id', product.id);
-        } else {
-          await supabase.from('products').insert(saved);
-        }
-      } catch (e) {
-        console.warn('Supabase saveProduct failed:', e);
-      }
-    }
-
     return saved;
   },
 
   async deleteProduct(id: string): Promise<void> {
+    if (isSupabaseConfigured()) {
+      const supabase = createClient();
+      const { error } = await supabase.from('products').delete().eq('id', id);
+      assertOk(error);
+      return;
+    }
     initializeLocalStoreIfNeeded();
     const products = getLocalItem<Product[]>('inv_products', SEED_PRODUCTS);
     setLocalItem('inv_products', products.filter((p) => p.id !== id));
-
-    if (isSupabaseConfigured()) {
-      try {
-        const supabase = createClient();
-        await supabase.from('products').delete().eq('id', id);
-      } catch (e) {
-        console.warn('Supabase deleteProduct failed:', e);
-      }
-    }
   },
 
   async getInvoices(): Promise<Invoice[]> {
-    initializeLocalStoreIfNeeded();
     if (isSupabaseConfigured()) {
-      try {
-        const supabase = createClient();
-        const { data, error } = await supabase.from('invoices').select('*').order('invoice_date', { ascending: false });
-        if (!error && data && data.length > 0) return data;
-      } catch (e) {
-        console.warn('Supabase getInvoices failed, using local fallback:', e);
-      }
+      const supabase = createClient();
+      const { data, error } = await supabase.from('invoices').select('*').order('invoice_date', { ascending: false });
+      assertOk(error);
+      return data || [];
     }
+    initializeLocalStoreIfNeeded();
     return getLocalItem('inv_invoices', [SEED_INVOICE]);
   },
 
   async getInvoice(id: string): Promise<{ invoice: Invoice; items: InvoiceItem[] } | null> {
-    initializeLocalStoreIfNeeded();
     if (isSupabaseConfigured()) {
-      try {
-        const supabase = createClient();
-        const { data: inv, error: invErr } = await supabase.from('invoices').select('*').eq('id', id).single();
-        if (!invErr && inv) {
-          const { data: itms } = await supabase.from('invoice_items').select('*').eq('invoice_id', id).order('sr_no');
-          return { invoice: inv, items: itms || [] };
-        }
-      } catch (e) {
-        console.warn('Supabase getInvoice failed, using local fallback:', e);
-      }
+      const supabase = createClient();
+      const { data: inv, error: invErr } = await supabase.from('invoices').select('*').eq('id', id).maybeSingle();
+      assertOk(invErr);
+      if (!inv) return null;
+      const { data: itms, error: itemErr } = await supabase.from('invoice_items').select('*').eq('invoice_id', id).order('sr_no');
+      assertOk(itemErr);
+      return { invoice: inv, items: itms || [] };
     }
 
+    initializeLocalStoreIfNeeded();
     const invoices = getLocalItem<Invoice[]>('inv_invoices', [SEED_INVOICE]);
     const items = getLocalItem<InvoiceItem[]>('inv_items', SEED_ITEMS);
     const foundInv = invoices.find((inv) => inv.id === id);
@@ -458,6 +468,79 @@ export const DataStore = {
     mode: 'create' | 'edit',
     invoiceId?: string
   ): Promise<string> {
+    if (isSupabaseConfigured()) {
+      const supabase = createClient();
+      const invoicePayload = {
+        invoice_no: invoiceData.invoice_no || `INV-${Date.now()}`,
+        company_name_snapshot: invoiceData.company_name_snapshot || null,
+        company_address_snapshot: invoiceData.company_address_snapshot || null,
+        company_gstin_snapshot: invoiceData.company_gstin_snapshot || null,
+        bank_name_snapshot: invoiceData.bank_name_snapshot || null,
+        account_number_snapshot: invoiceData.account_number_snapshot || null,
+        ifsc_code_snapshot: invoiceData.ifsc_code_snapshot || null,
+        customer_id: isUuid(invoiceData.customer_id) ? invoiceData.customer_id : null,
+        customer_name_snapshot: invoiceData.customer_name_snapshot || '',
+        customer_address_snapshot: invoiceData.customer_address_snapshot || '',
+        customer_place_of_supply_snapshot: invoiceData.customer_place_of_supply_snapshot || '',
+        customer_gstin_snapshot: invoiceData.customer_gstin_snapshot || null,
+        invoice_date: invoiceData.invoice_date || new Date().toISOString().split('T')[0],
+        po_no: invoiceData.po_no || null,
+        po_date: invoiceData.po_date || null,
+        gst_type: invoiceData.gst_type || 'cgst_sgst',
+        subtotal: Number(invoiceData.subtotal) || 0,
+        cgst: Number(invoiceData.cgst) || 0,
+        sgst: Number(invoiceData.sgst) || 0,
+        igst: Number(invoiceData.igst) || 0,
+        total_gst: Number(invoiceData.total_gst) || 0,
+        grand_total: Number(invoiceData.grand_total) || 0,
+        gst_in_words: invoiceData.gst_in_words || '',
+        amount_in_words: invoiceData.amount_in_words || '',
+      };
+
+      let targetId = invoiceId || '';
+      if (mode === 'edit' && isUuid(invoiceId)) {
+        const { data: oldItems, error: oldErr } = await supabase.from('invoice_items').select('product_id, qty').eq('invoice_id', invoiceId);
+        assertOk(oldErr);
+        for (const oldItem of oldItems || []) {
+          await adjustProductStock(oldItem.product_id, Number(oldItem.qty) || 0);
+        }
+        const { error } = await supabase.from('invoices').update(invoicePayload).eq('id', invoiceId);
+        assertOk(error);
+        const { error: deleteItemsError } = await supabase.from('invoice_items').delete().eq('invoice_id', invoiceId);
+        assertOk(deleteItemsError);
+        targetId = invoiceId;
+      } else {
+        const { data, error } = await supabase.from('invoices').insert(invoicePayload).select('id').single();
+        assertOk(error);
+        targetId = data.id;
+      }
+
+      const formattedItems = itemsData.map((item, index) => ({
+        invoice_id: targetId,
+        product_id: isUuid(item.product_id) ? item.product_id : null,
+        product_name_snapshot: item.product_name_snapshot || '',
+        description_snapshot: item.description_snapshot || null,
+        hsn_sac_snapshot: item.hsn_sac_snapshot || null,
+        qty: Number(item.qty) || 0,
+        rate: Number(item.rate) || 0,
+        taxable_amount: Number(item.taxable_amount) || 0,
+        gst_percentage: Number(item.gst_percentage) || 18,
+        gst_amount: Number(item.gst_amount) || 0,
+        sr_no: index + 1,
+      }));
+
+      if (formattedItems.length > 0) {
+        const { error } = await supabase.from('invoice_items').insert(formattedItems);
+        assertOk(error);
+      }
+
+      for (const item of formattedItems) {
+        await adjustProductStock(item.product_id, -(Number(item.qty) || 0));
+      }
+
+      return targetId;
+    }
+
     initializeLocalStoreIfNeeded();
     const invoices = getLocalItem<Invoice[]>('inv_invoices', [SEED_INVOICE]);
     const allItems = getLocalItem<InvoiceItem[]>('inv_items', SEED_ITEMS);
@@ -546,51 +629,22 @@ export const DataStore = {
     const remainingItems = allItems.filter((i) => i.invoice_id !== targetId);
     setLocalItem('inv_items', [...remainingItems, ...formattedItems]);
 
-    // Attempt Supabase sync if online
-    if (isSupabaseConfigured()) {
-      try {
-        const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const dbInvoice = { ...savedInvoice, user_id: user.id };
-          try {
-            if (mode === 'edit' && invoiceId) {
-              const { error } = await supabase.from('invoices').update(dbInvoice).eq('id', invoiceId);
-              if (error) throw error;
-              await supabase.from('invoice_items').delete().eq('invoice_id', invoiceId);
-            } else {
-              const { error } = await supabase.from('invoices').insert(dbInvoice);
-              if (error) throw error;
-            }
-          } catch (colErr) {
-            console.warn('Supabase invoice sync with snapshots failed, falling back to base columns:', colErr);
-            const baseInvoice = { ...dbInvoice };
-            delete (baseInvoice as Record<string, unknown>).company_name_snapshot;
-            delete (baseInvoice as Record<string, unknown>).company_address_snapshot;
-            delete (baseInvoice as Record<string, unknown>).company_gstin_snapshot;
-            delete (baseInvoice as Record<string, unknown>).bank_name_snapshot;
-            delete (baseInvoice as Record<string, unknown>).account_number_snapshot;
-            delete (baseInvoice as Record<string, unknown>).ifsc_code_snapshot;
-            if (mode === 'edit' && invoiceId) {
-              await supabase.from('invoices').update(baseInvoice).eq('id', invoiceId);
-              await supabase.from('invoice_items').delete().eq('invoice_id', invoiceId);
-            } else {
-              await supabase.from('invoices').insert(baseInvoice);
-            }
-          }
-          await supabase.from('invoice_items').insert(
-            formattedItems.map((fi) => ({ ...fi, invoice_id: targetId }))
-          );
-        }
-      } catch (e) {
-        console.warn('Supabase sync skipped/failed:', e);
-      }
-    }
-
     return targetId;
   },
 
   async deleteInvoice(id: string): Promise<void> {
+    if (isSupabaseConfigured()) {
+      const supabase = createClient();
+      const { data: items, error: itemErr } = await supabase.from('invoice_items').select('product_id, qty').eq('invoice_id', id);
+      assertOk(itemErr);
+      for (const item of items || []) {
+        await adjustProductStock(item.product_id, Number(item.qty) || 0);
+      }
+      const { error } = await supabase.from('invoices').delete().eq('id', id);
+      assertOk(error);
+      return;
+    }
+
     initializeLocalStoreIfNeeded();
     const invoices = getLocalItem<Invoice[]>('inv_invoices', [SEED_INVOICE]);
     const items = getLocalItem<InvoiceItem[]>('inv_items', SEED_ITEMS);
@@ -608,37 +662,47 @@ export const DataStore = {
 
     setLocalItem('inv_invoices', invoices.filter((i) => i.id !== id));
     setLocalItem('inv_items', items.filter((i) => i.invoice_id !== id));
-
-    if (isSupabaseConfigured()) {
-      try {
-        const supabase = createClient();
-        await supabase.from('invoices').delete().eq('id', id);
-      } catch (e) {
-        console.warn('Supabase deleteInvoice failed:', e);
-      }
-    }
   },
 
   async getTerms(): Promise<TermCondition[]> {
-    initializeLocalStoreIfNeeded();
     if (isSupabaseConfigured()) {
-      try {
-        const supabase = createClient();
-        const { data, error } = await supabase
-          .from('terms_conditions')
-          .select('*')
-          .eq('is_active', true)
-          .order('sort_order');
-        if (!error && data && data.length > 0) return data;
-      } catch (e) {
-        console.warn('Supabase getTerms failed, using local fallback:', e);
-      }
+      const supabase = createClient();
+      const { data, error } = await supabase.from('terms_conditions').select('*').order('sort_order');
+      assertOk(error);
+      return data || [];
     }
+    initializeLocalStoreIfNeeded();
     return getLocalItem('inv_terms', SEED_TERMS);
   },
 
   async saveTerms(terms: TermCondition[]): Promise<void> {
+    if (isSupabaseConfigured()) {
+      const supabase = createClient();
+      const { error: deleteError } = await supabase.from('terms_conditions').delete().not('id', 'is', null);
+      assertOk(deleteError);
+      if (terms.length === 0) return;
+      const { error } = await supabase.from('terms_conditions').insert(
+        terms.map((term) => ({
+          term_text: term.term_text,
+          sort_order: term.sort_order,
+          is_active: term.is_active,
+        }))
+      );
+      assertOk(error);
+      return;
+    }
     initializeLocalStoreIfNeeded();
     setLocalItem('inv_terms', terms);
   },
 };
+
+async function adjustProductStock(productId: string | null | undefined, delta: number) {
+  if (!isUuid(productId) || !delta) return;
+  const supabase = createClient();
+  const { data, error } = await supabase.from('products').select('stock_quantity').eq('id', productId).maybeSingle();
+  assertOk(error);
+  if (!data) return;
+  const next = Math.max(0, Number(data.stock_quantity || 0) + delta);
+  const { error: updateError } = await supabase.from('products').update({ stock_quantity: next }).eq('id', productId);
+  assertOk(updateError);
+}

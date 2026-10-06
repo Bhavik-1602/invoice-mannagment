@@ -300,8 +300,9 @@ export function generateInvoicePDF(
     '3. Subject to jurisdiction only.',
   ];
 
-  if (terms && terms.length > 0) {
-    terms.forEach((term, i) => {
+  const activeTerms = (terms || []).filter((term) => term.is_active !== false);
+  if (activeTerms.length > 0) {
+    activeTerms.forEach((term, i) => {
       doc.text(`${i + 1}. ${term.term_text}`, leftXBottom + 1, y);
       y += 3.8;
     });

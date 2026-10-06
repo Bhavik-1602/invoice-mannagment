@@ -8,6 +8,7 @@ import { formatCurrency, formatDate } from '@/lib/utils';
 import { generateInvoicePDF } from '@/lib/pdf';
 import { DataStore } from '@/lib/data-store';
 import Link from 'next/link';
+import { IconCopy, IconDownload, IconEdit, IconPrint } from '@/components/Icons';
 import { use } from 'react';
 
 export default function InvoiceViewPage({ params }: { params: Promise<{ id: string }> }) {
@@ -85,16 +86,16 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
           ← Back to Invoices
         </Link>
         <Link href={`/invoices/${id}/edit`} className="btn btn-secondary btn-sm">
-          ✏️ Edit
+          <IconEdit size={16} /> Edit
         </Link>
         <button className="btn btn-primary btn-sm" onClick={handleDownloadPDF}>
-          📥 Download PDF
+          <IconDownload size={16} /> Download PDF
         </button>
         <button className="btn btn-secondary btn-sm" onClick={handlePrint}>
-          🖨 Print
+          <IconPrint size={16} /> Print
         </button>
         <Link href={`/invoices/new?duplicate=${id}`} className="btn btn-secondary btn-sm">
-          📋 Duplicate Invoice
+          <IconCopy size={16} /> Duplicate
         </Link>
       </div>
 

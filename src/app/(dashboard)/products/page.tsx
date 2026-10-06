@@ -5,6 +5,7 @@ import { useToast } from '@/app/(dashboard)/layout';
 import { Product } from '@/types';
 import { formatCurrency } from '@/lib/utils';
 import { DataStore } from '@/lib/data-store';
+import { IconEdit, IconProducts, IconTrash } from '@/components/Icons';
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -108,7 +109,7 @@ export default function ProductsPage() {
       fetchProducts();
     } catch (err) {
       console.error(err);
-      showToast('Failed to save product', 'error');
+      showToast(err instanceof Error ? err.message : 'Failed to save product', 'error');
     } finally {
       setSaving(false);
     }
@@ -198,35 +199,33 @@ export default function ProductsPage() {
   return (
     <div>
       {/* Top Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+      <div className="page-header">
         <div>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0 }}>Product & Stock Master</h2>
-          <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-            Manage your items, prices, and track available inventory stock
-          </p>
+          <h2>Products & stock</h2>
+          <p>Manage items, rates, and available inventory.</p>
         </div>
         <button className="btn btn-primary" onClick={openAdd}>
-          + Add Product
+          Add Product
         </button>
       </div>
 
       {/* Stock Overview Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+      <div className="stats-grid">
         <div className="stat-card">
-          <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Total Products</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--primary)' }}>{totalProducts}</div>
+          <div className="stat-card-label">Total Products</div>
+          <div className="stat-card-value" style={{ color: 'var(--primary)' }}>{totalProducts}</div>
         </div>
         <div className="stat-card">
-          <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Total Units in Stock</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)' }}>{totalStockUnits.toLocaleString()}</div>
+          <div className="stat-card-label">Units in Stock</div>
+          <div className="stat-card-value">{totalStockUnits.toLocaleString()}</div>
         </div>
         <div className="stat-card">
-          <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Low Stock Items (≤ 10)</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--warning)' }}>{lowStockCount}</div>
+          <div className="stat-card-label">Low Stock</div>
+          <div className="stat-card-value" style={{ color: 'var(--warning)' }}>{lowStockCount}</div>
         </div>
         <div className="stat-card">
-          <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Out of Stock (0)</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--error)' }}>{outOfStockCount}</div>
+          <div className="stat-card-label">Out of Stock</div>
+          <div className="stat-card-value" style={{ color: 'var(--error)' }}>{outOfStockCount}</div>
         </div>
       </div>
 
@@ -276,10 +275,10 @@ export default function ProductsPage() {
       {products.length === 0 ? (
         <div className="card">
           <div className="empty-state">
-            <div className="empty-state-icon">📦</div>
+            <div className="empty-state-icon"><IconProducts size={22} /></div>
             <div className="empty-state-title">No products yet</div>
             <div className="empty-state-text">Add your products with current stock quantity to track inventory and use them in invoices.</div>
-            <button className="btn btn-primary" onClick={openAdd}>+ Add First Product</button>
+            <button className="btn btn-primary" onClick={openAdd}>Add Product</button>
           </div>
         </div>
       ) : filteredProducts.length === 0 ? (
@@ -340,22 +339,22 @@ export default function ProductsPage() {
                             onClick={() => openAdjust(p)}
                             title="Quick Adjust Stock"
                           >
-                            ⚡ Adjust
+                            Adjust
                           </button>
                         </div>
                       </td>
                       <td style={{ textAlign: 'right', fontWeight: 500 }}>{formatCurrency(p.default_rate)}</td>
                       <td style={{ textAlign: 'center' }}>{p.gst_percentage}%</td>
                       <td style={{ textAlign: 'right' }}>
-                        <div style={{ display: 'inline-flex', gap: '0.25rem' }}>
-                          <button className="btn btn-ghost btn-sm" onClick={() => openEdit(p)} title="Edit Product">✏️</button>
+                        <div className="row-actions" style={{ justifyContent: 'flex-end' }}>
+                          <button className="icon-btn" onClick={() => openEdit(p)} title="Edit Product" aria-label="Edit Product"><IconEdit size={16} /></button>
                           <button
-                            className="btn btn-ghost btn-sm"
+                            className="icon-btn icon-btn-danger"
                             onClick={() => setDeleteId(p.id)}
                             title="Delete Product"
-                            style={{ color: 'var(--error)' }}
+                            aria-label="Delete Product"
                           >
-                            🗑
+                            <IconTrash size={16} />
                           </button>
                         </div>
                       </td>
@@ -481,7 +480,7 @@ export default function ProductsPage() {
       {adjustProduct && (
         <div className="modal-overlay" onClick={() => !saving && setAdjustProduct(null)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '420px' }}>
-            <h3 className="modal-title">⚡ Quick Stock Adjust</h3>
+            <h3 className="modal-title">Adjust stock</h3>
             <p style={{ fontSize: '0.875rem', fontWeight: 600, marginTop: '0.25rem', color: 'var(--text-primary)' }}>
               {adjustProduct.product_name}
             </p>

@@ -8,6 +8,7 @@ import { formatCurrency, formatDate } from '@/lib/utils';
 import { generateInvoicePDF } from '@/lib/pdf';
 import { DataStore } from '@/lib/data-store';
 import Link from 'next/link';
+import { IconCopy, IconDownload, IconEdit, IconEye, IconInvoices, IconPrint, IconTrash } from '@/components/Icons';
 
 function SortIndicator({ active, order }: { active: boolean; order: 'asc' | 'desc' }) {
   if (!active) return <span style={{ opacity: 0.3 }}>↕</span>;
@@ -254,7 +255,7 @@ function InvoicesContent() {
 
         {filteredInvoices.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-state-icon">📄</div>
+            <div className="empty-state-icon"><IconInvoices size={22} /></div>
             <div className="empty-state-title">No invoices found</div>
             <div className="empty-state-text">
               {invoices.length === 0
@@ -263,7 +264,7 @@ function InvoicesContent() {
             </div>
             {invoices.length === 0 && (
               <Link href="/invoices/new" className="btn btn-primary">
-                + New Invoice
+                New Invoice
               </Link>
             )}
           </div>
@@ -308,39 +309,41 @@ function InvoicesContent() {
                     <td style={{ textAlign: 'right' }}>{formatCurrency(inv.total_gst)}</td>
                     <td style={{ textAlign: 'right', fontWeight: 600 }}>{formatCurrency(inv.grand_total)}</td>
                     <td>
-                      <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'nowrap' }}>
-                        <Link href={`/invoices/${inv.id}`} className="btn btn-ghost btn-sm" title="View">
-                          👁
+                      <div className="row-actions">
+                        <Link href={`/invoices/${inv.id}`} className="icon-btn" title="View" aria-label="View">
+                          <IconEye size={16} />
                         </Link>
-                        <Link href={`/invoices/${inv.id}/edit`} className="btn btn-ghost btn-sm" title="Edit">
-                          ✏️
+                        <Link href={`/invoices/${inv.id}/edit`} className="icon-btn" title="Edit" aria-label="Edit">
+                          <IconEdit size={16} />
                         </Link>
                         <button
-                          className="btn btn-ghost btn-sm"
+                          className="icon-btn"
                           onClick={() => handleDownloadPDF(inv.id)}
                           title="Download PDF"
+                          aria-label="Download PDF"
                         >
-                          📥
+                          <IconDownload size={16} />
                         </button>
                         <button
-                          className="btn btn-ghost btn-sm"
+                          className="icon-btn"
                           onClick={() => {
                             window.open(`/invoices/${inv.id}`, '_blank');
                           }}
                           title="Print"
+                          aria-label="Print"
                         >
-                          🖨
+                          <IconPrint size={16} />
                         </button>
-                        <Link href={`/invoices/new?duplicate=${inv.id}`} className="btn btn-ghost btn-sm" title="Duplicate">
-                          📋
+                        <Link href={`/invoices/new?duplicate=${inv.id}`} className="icon-btn" title="Duplicate" aria-label="Duplicate">
+                          <IconCopy size={16} />
                         </Link>
                         <button
-                          className="btn btn-ghost btn-sm"
+                          className="icon-btn icon-btn-danger"
                           onClick={() => setDeleteId(inv.id)}
                           title="Delete"
-                          style={{ color: 'var(--error)' }}
+                          aria-label="Delete"
                         >
-                          🗑
+                          <IconTrash size={16} />
                         </button>
                       </div>
                     </td>

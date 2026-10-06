@@ -6,6 +6,7 @@ import { Customer, Invoice } from '@/types';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { DataStore } from '@/lib/data-store';
 import Link from 'next/link';
+import { IconCustomers, IconEdit, IconEye, IconTrash } from '@/components/Icons';
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -107,7 +108,7 @@ export default function CustomersPage() {
       fetchCustomers();
     } catch (err) {
       console.error(err);
-      showToast('Failed to save customer', 'error');
+      showToast(err instanceof Error ? err.message : 'Failed to save customer', 'error');
     } finally {
       setSaving(false);
     }
@@ -139,10 +140,10 @@ export default function CustomersPage() {
   return (
     <div>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <h3 style={{ fontSize: '1rem', fontWeight: 600 }}>Customer Master ({customers.length})</h3>
+      <div className="page-header">
+        <h3>Customers ({customers.length})</h3>
         <button className="btn btn-primary btn-sm" onClick={openAdd}>
-          + Add Customer
+          Add Customer
         </button>
       </div>
 
@@ -150,10 +151,10 @@ export default function CustomersPage() {
       {customers.length === 0 ? (
         <div className="card">
           <div className="empty-state">
-            <div className="empty-state-icon">👥</div>
+            <div className="empty-state-icon"><IconCustomers size={22} /></div>
             <div className="empty-state-title">No customers yet</div>
             <div className="empty-state-text">Customers are automatically saved when you create invoices, or add them here.</div>
-            <button className="btn btn-primary" onClick={openAdd}>+ Add Customer</button>
+            <button className="btn btn-primary" onClick={openAdd}>Add Customer</button>
           </div>
         </div>
       ) : (
@@ -179,16 +180,16 @@ export default function CustomersPage() {
                       <span className="badge badge-success">{c.invoice_count || 0}</span>
                     </td>
                     <td>
-                      <div style={{ display: 'flex', gap: '0.25rem' }}>
-                        <button className="btn btn-ghost btn-sm" onClick={() => openView(c)} title="View">👁</button>
-                        <button className="btn btn-ghost btn-sm" onClick={() => openEdit(c)} title="Edit">✏️</button>
+                      <div className="row-actions">
+                        <button className="icon-btn" onClick={() => openView(c)} title="View" aria-label="View"><IconEye size={16} /></button>
+                        <button className="icon-btn" onClick={() => openEdit(c)} title="Edit" aria-label="Edit"><IconEdit size={16} /></button>
                         <button
-                          className="btn btn-ghost btn-sm"
+                          className="icon-btn icon-btn-danger"
                           onClick={() => setDeleteId(c.id)}
                           title="Delete"
-                          style={{ color: 'var(--error)' }}
+                          aria-label="Delete"
                         >
-                          🗑
+                          <IconTrash size={16} />
                         </button>
                       </div>
                     </td>
