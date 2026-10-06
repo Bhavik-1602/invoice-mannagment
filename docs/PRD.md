@@ -1,13 +1,13 @@
 # Product Requirements Document
 
 ## Product
-RK Woods Invoice Management System
+Tax Invoice Management System
 
 ## Problem
 Currently invoices are created manually. Need a digital system to create, save, manage, and download professional tax invoices.
 
 ## Target Users
-Business owner / authorized staff at R K WOODS
+Business owner / authorized billing staff
 
 ## Goal
 A clean, simple invoice management website — NOT complex accounting/ERP software.
