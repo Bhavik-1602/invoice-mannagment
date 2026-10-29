@@ -26,11 +26,8 @@ export default function ProductsPage() {
   // Form fields
   const [formName, setFormName] = useState('');
   const [formDesc, setFormDesc] = useState('');
-  const [formHsn, setFormHsn] = useState('');
   const [formStock, setFormStock] = useState('0');
-  const [formUnit, setFormUnit] = useState('Pcs');
-  const [formRate, setFormRate] = useState('');
-  const [formGst, setFormGst] = useState('18');
+  const [formUnit, setFormUnit] = useState('kgs');
 
   const { showToast } = useToast();
 
@@ -52,11 +49,8 @@ export default function ProductsPage() {
   const resetForm = () => {
     setFormName('');
     setFormDesc('');
-    setFormHsn('');
     setFormStock('0');
-    setFormUnit('Pcs');
-    setFormRate('');
-    setFormGst('18');
+    setFormUnit('kgs');
   };
 
   const openAdd = () => {
@@ -68,11 +62,8 @@ export default function ProductsPage() {
   const openEdit = (product: Product) => {
     setFormName(product.product_name);
     setFormDesc(product.description || '');
-    setFormHsn(product.hsn_sac || '');
     setFormStock((product.stock_quantity ?? 0).toString());
-    setFormUnit(product.unit || 'Pcs');
-    setFormRate(product.default_rate.toString());
-    setFormGst(product.gst_percentage.toString());
+    setFormUnit(product.unit || 'kgs');
     setEditProduct(product);
     setShowAdd(true);
   };
@@ -95,11 +86,11 @@ export default function ProductsPage() {
         id: editProduct?.id,
         product_name: formName.trim(),
         description: formDesc.trim() || null,
-        hsn_sac: formHsn.trim() || null,
+        hsn_sac: editProduct?.hsn_sac ?? null,
         stock_quantity: parseFloat(formStock) || 0,
-        unit: formUnit.trim() || 'Pcs',
-        default_rate: parseFloat(formRate) || 0,
-        gst_percentage: parseFloat(formGst) || 0,
+        unit: formUnit.trim() || 'kgs',
+        default_rate: editProduct?.default_rate ?? 0,
+        gst_percentage: editProduct?.gst_percentage ?? 18,
       });
 
       showToast(editProduct ? 'Product updated successfully' : 'Product added successfully', 'success');
@@ -139,7 +130,7 @@ export default function ProductsPage() {
         stock_quantity: newStock,
       });
 
-      showToast(`Stock updated to ${newStock} ${adjustProduct.unit || 'Pcs'}`, 'success');
+      showToast(`Stock updated to ${newStock} ${adjustProduct.unit || 'kgs'}`, 'success');
       setAdjustProduct(null);
       setAdjustAmount('');
       fetchProducts();
@@ -302,7 +293,7 @@ export default function ProductsPage() {
               <tbody>
                 {filteredProducts.map((p) => {
                   const stock = Number(p.stock_quantity) || 0;
-                  const unit = p.unit || 'Pcs';
+                  const unit = p.unit || 'kgs';
 
                   return (
                     <tr key={p.id}>
@@ -422,46 +413,9 @@ export default function ProductsPage() {
                     className="form-input"
                     value={formUnit}
                     onChange={(e) => setFormUnit(e.target.value)}
-                    placeholder="Pcs, Nos, Box..."
+                    placeholder="kgs"
                   />
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>e.g. Pcs, Box</span>
-                </div>
-              </div>
-
-              <div className="grid-3">
-                <div className="form-group">
-                  <label className="form-label">HSN/SAC</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={formHsn}
-                    onChange={(e) => setFormHsn(e.target.value)}
-                    placeholder="e.g. 4407"
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Default Rate (₹)</label>
-                  <input
-                    type="number"
-                    className="form-input"
-                    value={formRate}
-                    onChange={(e) => setFormRate(e.target.value)}
-                    min="0"
-                    step="any"
-                    placeholder="0.00"
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">GST %</label>
-                  <input
-                    type="number"
-                    className="form-input"
-                    value={formGst}
-                    onChange={(e) => setFormGst(e.target.value)}
-                    min="0"
-                    max="100"
-                    step="any"
-                  />
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Default: kgs</span>
                 </div>
               </div>
             </div>
@@ -485,7 +439,7 @@ export default function ProductsPage() {
               {adjustProduct.product_name}
             </p>
             <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginBottom: '1.25rem' }}>
-              Current Stock: <strong>{adjustProduct.stock_quantity ?? 0} {adjustProduct.unit || 'Pcs'}</strong>
+              Current Stock: <strong>{adjustProduct.stock_quantity ?? 0} {adjustProduct.unit || 'kgs'}</strong>
             </p>
 
             <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
@@ -523,7 +477,7 @@ export default function ProductsPage() {
               />
               {adjustType === 'add' && adjustAmount && !isNaN(parseFloat(adjustAmount)) && (
                 <div style={{ fontSize: '0.8125rem', color: 'var(--success)', marginTop: '0.25rem' }}>
-                  New Stock will be: {(adjustProduct.stock_quantity ?? 0) + parseFloat(adjustAmount)} {adjustProduct.unit || 'Pcs'}
+                  New Stock will be: {(adjustProduct.stock_quantity ?? 0) + parseFloat(adjustAmount)} {adjustProduct.unit || 'kgs'}
                 </div>
               )}
             </div>

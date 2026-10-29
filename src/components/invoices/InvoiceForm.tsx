@@ -182,7 +182,7 @@ export default function InvoiceForm({ mode, invoiceId, duplicateFrom }: InvoiceF
       rate: product.default_rate,
       gst_percentage: product.gst_percentage,
       available_stock: product.stock_quantity ?? 0,
-      unit: product.unit || 'Pcs',
+      unit: product.unit || 'kgs',
     });
     setProductSearchIndex(null);
     setProductSearch('');
@@ -288,7 +288,7 @@ export default function InvoiceForm({ mode, invoiceId, duplicateFrom }: InvoiceF
             default_rate: parseNumeric(itm.rate),
             gst_percentage: parseNumeric(itm.gst_percentage),
             stock_quantity: 0,
-            unit: 'PCS',
+            unit: 'kgs',
           });
           newProductIds[i] = newProd.id;
         }
@@ -580,7 +580,7 @@ export default function InvoiceForm({ mode, invoiceId, duplicateFrom }: InvoiceF
                                 fontWeight: 600,
                                 color: (p.stock_quantity ?? 0) > 0 ? 'var(--success)' : 'var(--error)',
                               }}>
-                                Stock: {p.stock_quantity ?? 0} {p.unit || 'Pcs'}
+                                Stock: {p.stock_quantity ?? 0} {p.unit || 'kgs'}
                               </span>
                             </div>
                             <div className="autocomplete-item-sub">
@@ -625,7 +625,7 @@ export default function InvoiceForm({ mode, invoiceId, duplicateFrom }: InvoiceF
                         fontWeight: 600,
                         color: Number(item.available_stock) > 0 ? 'var(--text-muted)' : 'var(--error)'
                       }}>
-                        Stock: {item.available_stock} {item.unit || 'Pcs'}
+                        Stock: {item.available_stock} {item.unit || 'kgs'}
                       </span>
                     )}
                   </div>
@@ -640,7 +640,7 @@ export default function InvoiceForm({ mode, invoiceId, duplicateFrom }: InvoiceF
                   />
                   {item.available_stock !== undefined && item.available_stock !== null && parseNumeric(item.qty) > Number(item.available_stock) && (
                     <div style={{ fontSize: '0.75rem', color: 'var(--warning)', marginTop: '0.25rem', fontWeight: 500 }}>
-                      Exceeds stock ({item.available_stock} {item.unit || 'Pcs'})
+                      Exceeds stock ({item.available_stock} {item.unit || 'kgs'})
                     </div>
                   )}
                   {errors[`item_${index}_qty`] && <div className="form-error">{errors[`item_${index}_qty`]}</div>}

@@ -57,7 +57,7 @@ export const SEED_PRODUCTS: Product[] = [
     default_rate: 310000,
     gst_percentage: 18,
     stock_quantity: 46,
-    unit: 'PCS',
+    unit: 'kgs',
     created_at: '2026-09-18T00:00:00Z',
     updated_at: '2026-09-18T00:00:00Z',
   },
@@ -70,7 +70,7 @@ export const SEED_PRODUCTS: Product[] = [
     default_rate: 150000,
     gst_percentage: 18,
     stock_quantity: 20,
-    unit: 'PCS',
+    unit: 'kgs',
     created_at: '2026-09-18T00:00:00Z',
     updated_at: '2026-09-18T00:00:00Z',
   },
@@ -412,7 +412,7 @@ export const DataStore = {
       default_rate: Number(product.default_rate) || 0,
       gst_percentage: Number(product.gst_percentage) || 18,
       stock_quantity: Number(product.stock_quantity) || 0,
-      unit: product.unit || 'PCS',
+      unit: product.unit || 'kgs',
     };
 
     if (isSupabaseConfigured()) {
