@@ -188,7 +188,7 @@ export default function SettingsPage() {
       {/* Company Information */}
       <div className="card" style={{ marginBottom: '1.5rem' }}>
         <h3 className="card-title" style={{ marginBottom: '1rem' }}>Company information</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(, 100%), 1fr))', gap: '1rem' }}>
+        <div className="form-grid">
           <div className="form-group">
             <label className="form-label">Company Name</label>
             <input
@@ -222,7 +222,7 @@ export default function SettingsPage() {
       {/* Bank Details */}
       <div className="card" style={{ marginBottom: '1.5rem' }}>
         <h3 className="card-title" style={{ marginBottom: '1rem' }}>Bank details</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(, 100%), 1fr))', gap: '1rem' }}>
+        <div className="form-grid">
           <div className="form-group">
             <label className="form-label">Bank Name</label>
             <input
@@ -268,16 +268,7 @@ export default function SettingsPage() {
         <h3 className="card-title" style={{ marginBottom: '1rem' }}>Terms and conditions</h3>
 
         {terms.map((term, index) => (
-          <div
-            key={term.id}
-            style={{
-              display: 'flex',
-              gap: '0.75rem',
-              alignItems: 'flex-start',
-              padding: '0.625rem 0',
-              borderBottom: '1px solid var(--border)',
-            }}
-          >
+          <div key={term.id} className="term-row">
             <input
               type="checkbox"
               checked={term.is_active}

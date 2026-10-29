@@ -185,7 +185,7 @@ function InvoicesContent() {
     <div>
       {/* Search & Filters */}
       <div className="card" style={{ marginBottom: '1.5rem' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(, 100%), 1fr))', gap: '0.75rem', alignItems: 'end' }}>
+        <div className="filter-grid">
           <div className="form-group" style={{ margin: 0 }}>
             <label className="form-label">Search</label>
             <input

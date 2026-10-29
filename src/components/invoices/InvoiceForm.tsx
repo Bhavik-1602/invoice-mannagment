@@ -368,7 +368,7 @@ export default function InvoiceForm({ mode, invoiceId, duplicateFrom }: InvoiceF
       {/* Customer Details */}
       <div className="card" style={{ marginBottom: '1.5rem' }}>
         <h3 className="card-title" style={{ marginBottom: '1rem' }}>Customer / Billed to</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(, 100%), 1fr))', gap: '1rem' }}>
+        <div className="form-grid">
           <div className="form-group" ref={customerRef}>
             <label className="form-label">M/s. / Customer Name *</label>
             <div className="autocomplete-wrapper">
@@ -445,7 +445,7 @@ export default function InvoiceForm({ mode, invoiceId, duplicateFrom }: InvoiceF
       {/* Invoice Details */}
       <div className="card" style={{ marginBottom: '1.5rem' }}>
         <h3 className="card-title" style={{ marginBottom: '1rem' }}>📑 Invoice Details</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(, 100%), 1fr))', gap: '1rem' }}>
+        <div className="form-grid">
           <div className="form-group">
             <label className="form-label">Invoice No. *</label>
             <input
@@ -546,8 +546,8 @@ export default function InvoiceForm({ mode, invoiceId, duplicateFrom }: InvoiceF
                 )}
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(, 100%), 1fr))', gap: '0.75rem' }}>
-                <div className="form-group grid-span-2" ref={productSearchIndex === index ? productRef : undefined}>
+              <div className="item-grid">
+                <div className="form-group span-all" ref={productSearchIndex === index ? productRef : undefined}>
                   <label className="form-label">Product Name *</label>
                   <div className="autocomplete-wrapper">
                     <input
@@ -573,7 +573,7 @@ export default function InvoiceForm({ mode, invoiceId, duplicateFrom }: InvoiceF
                             className="autocomplete-item"
                             onClick={() => selectProduct(p, index)}
                           >
-                            <div className="autocomplete-item-name" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div className="autocomplete-item-name" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                               <span>{p.product_name}</span>
                               <span style={{
                                 fontSize: '0.75rem',
@@ -594,7 +594,7 @@ export default function InvoiceForm({ mode, invoiceId, duplicateFrom }: InvoiceF
                   {errors[`item_${index}_name`] && <div className="form-error">{errors[`item_${index}_name`]}</div>}
                 </div>
 
-                <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                <div className="form-group span-all">
                   <label className="form-label">Description</label>
                   <textarea
                     className="form-input form-textarea"
@@ -711,7 +711,7 @@ export default function InvoiceForm({ mode, invoiceId, duplicateFrom }: InvoiceF
       {/* Totals */}
       <div className="card" style={{ marginBottom: '1.5rem' }}>
         <h3 className="card-title" style={{ marginBottom: '1rem' }}>💰 Invoice Total</h3>
-        <div style={{ maxWidth: '400px', marginLeft: 'auto' }}>
+        <div className="totals-panel">
           <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', fontSize: '0.875rem' }}>
             <span style={{ color: 'var(--text-secondary)' }}>Sub Total</span>
             <span style={{ fontWeight: 500 }}>{formatCurrency(totals.subtotal)}</span>

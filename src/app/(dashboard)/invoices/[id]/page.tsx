@@ -81,7 +81,7 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
   return (
     <div>
       {/* Action buttons */}
-      <div className="no-print" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1.5rem' }}>
+      <div className="no-print toolbar">
         <Link href="/invoices" className="btn btn-secondary btn-sm">
           ← Back to Invoices
         </Link>
@@ -129,7 +129,7 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
               <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>GSTIN: {invoice.customer_gstin_snapshot}</p>
             )}
           </div>
-          <div style={{ textAlign: 'right' }}>
+          <div className="invoice-meta">
             <p style={{ fontSize: '0.8125rem' }}><strong>Invoice No.:</strong> {invoice.invoice_no}</p>
             <p style={{ fontSize: '0.8125rem' }}><strong>Date:</strong> {formatDate(invoice.invoice_date)}</p>
             {invoice.po_no && <p style={{ fontSize: '0.8125rem' }}><strong>P.O. No.:</strong> {invoice.po_no}</p>}
@@ -150,18 +150,10 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
           if (ifsc) parts.push(`IFSC: ${ifsc}`);
           if (parts.length === 0) return null;
           return (
-            <div style={{
-              backgroundColor: '#E2E8F0',
-              padding: '0.5rem 0.75rem',
-              textAlign: 'center',
-              fontWeight: 600,
-              fontSize: '0.8125rem',
-              borderTop: '1px solid var(--border)',
-              borderBottom: '1px solid var(--border)',
-              marginBottom: '1.25rem',
-              color: '#0F172A',
-            }}>
-              {parts.join(' | ')}
+            <div className="invoice-bank-strip">
+              {parts.map((part) => (
+                <span key={part}>{part}</span>
+              ))}
             </div>
           );
         })()}
@@ -204,7 +196,7 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
         </div>
 
         {/* Totals */}
-        <div style={{ maxWidth: '350px', marginLeft: 'auto', marginBottom: '1.5rem' }}>
+        <div className="totals-panel" style={{ marginBottom: '1.5rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.375rem 0', fontSize: '0.875rem' }}>
             <span style={{ color: 'var(--text-secondary)' }}>Sub Total</span>
             <span>{formatCurrency(invoice.subtotal)}</span>

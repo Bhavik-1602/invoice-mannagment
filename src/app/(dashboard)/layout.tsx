@@ -45,6 +45,17 @@ export default function DashboardLayout({
   const mainRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
+    setSidebarOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    document.body.style.overflow = sidebarOpen ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [sidebarOpen]);
+
+  useEffect(() => {
     const root = mainRef.current;
     if (!root) return;
 
@@ -82,6 +93,13 @@ export default function DashboardLayout({
   };
 
   const current = navLinks.find((link) => isActive(link.href));
+  const pageTitle = pathname === '/invoices/new'
+    ? 'New Invoice'
+    : /\/invoices\/[^/]+\/edit$/.test(pathname)
+      ? 'Edit Invoice'
+      : /\/invoices\/[^/]+$/.test(pathname)
+        ? 'Invoice'
+        : (current?.label || 'Invoice Management');
 
   return (
     <ToastContext.Provider value={{ showToast }}>
@@ -130,11 +148,11 @@ export default function DashboardLayout({
               >
                 <IconMenu />
               </button>
-              <h2 className="top-bar-title">{current?.label || 'Invoice Management'}</h2>
+              <h2 className="top-bar-title">{pageTitle}</h2>
             </div>
-            <Link href="/invoices/new" className="btn btn-primary btn-sm">
+            <Link href="/invoices/new" className="btn btn-primary btn-sm top-bar-cta" aria-label="New Invoice">
               <IconPlus size={16} />
-              New Invoice
+              <span className="cta-label">New Invoice</span>
             </Link>
           </div>
 
@@ -142,6 +160,22 @@ export default function DashboardLayout({
             {children}
           </div>
         </main>
+
+        <nav className="bottom-nav" aria-label="Main">
+          {navLinks.map((link) => {
+            const Icon = link.icon;
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={isActive(link.href) ? 'active' : ''}
+              >
+                <Icon size={20} />
+                <span>{link.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
 
         <div className="toast-stack">
           {toasts.map((toast) => (
