@@ -282,89 +282,146 @@ function InvoicesContent() {
             )}
           </div>
         ) : (
-          <div className="table-container">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th onClick={() => toggleSort('invoice_no')} style={{ cursor: 'pointer' }}>
-                    Invoice No. <SortIndicator active={sortBy === 'invoice_no'} order={sortOrder} />
-                  </th>
-                  <th onClick={() => toggleSort('customer_name')} style={{ cursor: 'pointer' }}>
-                    Customer <SortIndicator active={sortBy === 'customer_name'} order={sortOrder} />
-                  </th>
-                  <th>GSTIN</th>
-                  <th onClick={() => toggleSort('invoice_date')} style={{ cursor: 'pointer' }}>
-                    Date <SortIndicator active={sortBy === 'invoice_date'} order={sortOrder} />
-                  </th>
-                  <th style={{ textAlign: 'right' }}>Subtotal</th>
-                  <th style={{ textAlign: 'right' }}>GST</th>
-                  <th onClick={() => toggleSort('grand_total')} style={{ cursor: 'pointer', textAlign: 'right' }}>
-                    Grand Total <SortIndicator active={sortBy === 'grand_total'} order={sortOrder} />
-                  </th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pagedInvoices.map((inv) => (
-                  <tr key={inv.id}>
-                    <td style={{ fontWeight: 500 }}>
-                      <div>{inv.invoice_no}</div>
-                      {inv.company_name_snapshot && (
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 400 }}>
-                          {inv.company_name_snapshot}
-                        </div>
-                      )}
-                    </td>
-                    <td>{inv.customer_name_snapshot}</td>
-                    <td style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>{inv.customer_gstin_snapshot || '-'}</td>
-                    <td>{formatDate(inv.invoice_date)}</td>
-                    <td style={{ textAlign: 'right' }}>{formatCurrency(inv.subtotal)}</td>
-                    <td style={{ textAlign: 'right' }}>{formatCurrency(inv.total_gst)}</td>
-                    <td style={{ textAlign: 'right', fontWeight: 600 }}>{formatCurrency(inv.grand_total)}</td>
-                    <td>
-                      <div className="row-actions">
-                        <Link href={`/invoices/${inv.id}`} className="icon-btn" title="View" aria-label="View">
-                          <IconEye size={16} />
-                        </Link>
-                        <Link href={`/invoices/${inv.id}/edit`} className="icon-btn" title="Edit" aria-label="Edit">
-                          <IconEdit size={16} />
-                        </Link>
-                        <button
-                          className="icon-btn"
-                          onClick={() => handleDownloadPDF(inv.id)}
-                          title="Download PDF"
-                          aria-label="Download PDF"
-                        >
-                          <IconDownload size={16} />
-                        </button>
-                        <button
-                          className="icon-btn"
-                          onClick={() => {
-                            window.open(`/invoices/${inv.id}`, '_blank');
-                          }}
-                          title="Print"
-                          aria-label="Print"
-                        >
-                          <IconPrint size={16} />
-                        </button>
-                        <Link href={`/invoices/new?duplicate=${inv.id}`} className="icon-btn" title="Duplicate" aria-label="Duplicate">
-                          <IconCopy size={16} />
-                        </Link>
-                        <button
-                          className="icon-btn icon-btn-danger"
-                          onClick={() => setDeleteId(inv.id)}
-                          title="Delete"
-                          aria-label="Delete"
-                        >
-                          <IconTrash size={16} />
-                        </button>
-                      </div>
-                    </td>
+          <>
+            <div className="table-container desktop-table">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th onClick={() => toggleSort('invoice_no')} style={{ cursor: 'pointer' }}>
+                      Invoice No. <SortIndicator active={sortBy === 'invoice_no'} order={sortOrder} />
+                    </th>
+                    <th onClick={() => toggleSort('customer_name')} style={{ cursor: 'pointer' }}>
+                      Customer <SortIndicator active={sortBy === 'customer_name'} order={sortOrder} />
+                    </th>
+                    <th>GSTIN</th>
+                    <th onClick={() => toggleSort('invoice_date')} style={{ cursor: 'pointer' }}>
+                      Date <SortIndicator active={sortBy === 'invoice_date'} order={sortOrder} />
+                    </th>
+                    <th style={{ textAlign: 'right' }}>Subtotal</th>
+                    <th style={{ textAlign: 'right' }}>GST</th>
+                    <th onClick={() => toggleSort('grand_total')} style={{ cursor: 'pointer', textAlign: 'right' }}>
+                      Grand Total <SortIndicator active={sortBy === 'grand_total'} order={sortOrder} />
+                    </th>
+                    <th>Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {pagedInvoices.map((inv) => (
+                    <tr key={inv.id}>
+                      <td style={{ fontWeight: 500 }}>
+                        <div>{inv.invoice_no}</div>
+                        {inv.company_name_snapshot && (
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 400 }}>
+                            {inv.company_name_snapshot}
+                          </div>
+                        )}
+                      </td>
+                      <td>{inv.customer_name_snapshot}</td>
+                      <td style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>{inv.customer_gstin_snapshot || '-'}</td>
+                      <td>{formatDate(inv.invoice_date)}</td>
+                      <td style={{ textAlign: 'right' }}>{formatCurrency(inv.subtotal)}</td>
+                      <td style={{ textAlign: 'right' }}>{formatCurrency(inv.total_gst)}</td>
+                      <td style={{ textAlign: 'right', fontWeight: 600 }}>{formatCurrency(inv.grand_total)}</td>
+                      <td>
+                        <div className="row-actions">
+                          <Link href={`/invoices/${inv.id}`} className="icon-btn" title="View" aria-label="View">
+                            <IconEye size={16} />
+                          </Link>
+                          <Link href={`/invoices/${inv.id}/edit`} className="icon-btn" title="Edit" aria-label="Edit">
+                            <IconEdit size={16} />
+                          </Link>
+                          <button
+                            className="icon-btn"
+                            onClick={() => handleDownloadPDF(inv.id)}
+                            title="Download PDF"
+                            aria-label="Download PDF"
+                          >
+                            <IconDownload size={16} />
+                          </button>
+                          <button
+                            className="icon-btn"
+                            onClick={() => {
+                              window.open(`/invoices/${inv.id}`, '_blank');
+                            }}
+                            title="Print"
+                            aria-label="Print"
+                          >
+                            <IconPrint size={16} />
+                          </button>
+                          <Link href={`/invoices/new?duplicate=${inv.id}`} className="icon-btn" title="Duplicate" aria-label="Duplicate">
+                            <IconCopy size={16} />
+                          </Link>
+                          <button
+                            className="icon-btn icon-btn-danger"
+                            onClick={() => setDeleteId(inv.id)}
+                            title="Delete"
+                            aria-label="Delete"
+                          >
+                            <IconTrash size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="invoice-mobile-list">
+              {pagedInvoices.map((inv) => (
+                <div key={inv.id} className="invoice-mobile-card">
+                  <div className="invoice-mobile-top">
+                    <div className="invoice-mobile-main">
+                      <div className="invoice-mobile-no">{inv.invoice_no}</div>
+                      <div className="invoice-mobile-customer">{inv.customer_name_snapshot}</div>
+                      <div className="invoice-mobile-meta">
+                        <span>{formatDate(inv.invoice_date)}</span>
+                        {inv.company_name_snapshot && <span>{inv.company_name_snapshot}</span>}
+                      </div>
+                    </div>
+                    <div className="invoice-mobile-total">{formatCurrency(inv.grand_total)}</div>
+                  </div>
+                  <div className="row-actions invoice-mobile-actions">
+                    <Link href={`/invoices/${inv.id}`} className="icon-btn" title="View" aria-label="View">
+                      <IconEye size={16} />
+                    </Link>
+                    <Link href={`/invoices/${inv.id}/edit`} className="icon-btn" title="Edit" aria-label="Edit">
+                      <IconEdit size={16} />
+                    </Link>
+                    <button
+                      className="icon-btn"
+                      onClick={() => handleDownloadPDF(inv.id)}
+                      title="Download PDF"
+                      aria-label="Download PDF"
+                    >
+                      <IconDownload size={16} />
+                    </button>
+                    <button
+                      className="icon-btn"
+                      onClick={() => {
+                        window.open(`/invoices/${inv.id}`, '_blank');
+                      }}
+                      title="Print"
+                      aria-label="Print"
+                    >
+                      <IconPrint size={16} />
+                    </button>
+                    <Link href={`/invoices/new?duplicate=${inv.id}`} className="icon-btn" title="Duplicate" aria-label="Duplicate">
+                      <IconCopy size={16} />
+                    </Link>
+                    <button
+                      className="icon-btn icon-btn-danger"
+                      onClick={() => setDeleteId(inv.id)}
+                      title="Delete"
+                      aria-label="Delete"
+                    >
+                      <IconTrash size={16} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         )}
 
         <Pagination

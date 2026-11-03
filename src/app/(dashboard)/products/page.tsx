@@ -288,7 +288,7 @@ export default function ProductsPage() {
         </div>
       ) : (
         <div className="card">
-          <div className="table-container">
+          <div className="table-container desktop-table">
             <table className="table">
               <thead>
                 <tr>
@@ -365,6 +365,58 @@ export default function ProductsPage() {
               </tbody>
             </table>
           </div>
+
+          <div className="product-mobile-list">
+            {pagedProducts.map((p) => {
+              const stock = Number(p.stock_quantity) || 0;
+              const unit = p.unit || 'kgs';
+              const stockClass = stock > 10 ? 'badge-success' : stock > 0 ? 'badge-warning' : 'badge-danger';
+              const stockLabel = stock > 10
+                ? `${stock} ${unit}`
+                : stock > 0
+                  ? `${stock} ${unit} · Low`
+                  : `0 ${unit} · Out`;
+
+              return (
+                <div key={p.id} className="product-mobile-card">
+                  <div className="product-mobile-top">
+                    <div className="product-mobile-main">
+                      <div className="product-mobile-name">{p.product_name}</div>
+                      {p.description && (
+                        <div className="product-mobile-desc">{p.description}</div>
+                      )}
+                      <div className="product-mobile-meta">
+                        <span className={`badge ${stockClass}`} style={{ fontWeight: 600 }}>{stockLabel}</span>
+                        {p.hsn_sac && <span>HSN {p.hsn_sac}</span>}
+                      </div>
+                    </div>
+                    <div className="product-mobile-rate">{formatCurrency(p.default_rate)}</div>
+                  </div>
+                  <div className="row-actions product-mobile-actions">
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => openAdjust(p)}
+                    >
+                      Adjust
+                    </button>
+                    <button className="icon-btn" onClick={() => openEdit(p)} title="Edit Product" aria-label="Edit Product">
+                      <IconEdit size={16} />
+                    </button>
+                    <button
+                      className="icon-btn icon-btn-danger"
+                      onClick={() => setDeleteId(p.id)}
+                      title="Delete Product"
+                      aria-label="Delete Product"
+                    >
+                      <IconTrash size={16} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
           <Pagination
             page={safePage}
             pageSize={PAGE_SIZE}
