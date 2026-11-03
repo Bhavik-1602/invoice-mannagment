@@ -7,6 +7,9 @@ import { formatCurrency, formatDate } from '@/lib/utils';
 import { DataStore } from '@/lib/data-store';
 import Link from 'next/link';
 import { IconCustomers, IconEdit, IconEye, IconTrash } from '@/components/Icons';
+import Pagination, { paginateItems } from '@/components/Pagination';
+
+const PAGE_SIZE = 10;
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -18,6 +21,7 @@ export default function CustomersPage() {
   const [deleting, setDeleting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
+  const [page, setPage] = useState(1);
 
   // Add/Edit form
   const [formName, setFormName] = useState('');
@@ -129,6 +133,8 @@ export default function CustomersPage() {
     }
   };
 
+  const { page: safePage, items: pagedCustomers } = paginateItems(customers, page, PAGE_SIZE);
+
   if (loading) {
     return (
       <div className="loading-page">
@@ -171,7 +177,7 @@ export default function CustomersPage() {
                 </tr>
               </thead>
               <tbody>
-                {customers.map((c) => (
+                {pagedCustomers.map((c) => (
                   <tr key={c.id}>
                     <td style={{ fontWeight: 500 }}>{c.customer_name}</td>
                     <td style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>{c.gstin || '-'}</td>
@@ -198,6 +204,12 @@ export default function CustomersPage() {
               </tbody>
             </table>
           </div>
+          <Pagination
+            page={safePage}
+            pageSize={PAGE_SIZE}
+            total={customers.length}
+            onPageChange={setPage}
+          />
         </div>
       )}
 

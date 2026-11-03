@@ -6,6 +6,9 @@ import { Product } from '@/types';
 import { formatCurrency } from '@/lib/utils';
 import { DataStore } from '@/lib/data-store';
 import { IconEdit, IconProducts, IconTrash } from '@/components/Icons';
+import Pagination, { paginateItems } from '@/components/Pagination';
+
+const PAGE_SIZE = 10;
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -22,6 +25,7 @@ export default function ProductsPage() {
   // Filters & Search
   const [search, setSearch] = useState('');
   const [stockFilter, setStockFilter] = useState<'all' | 'in_stock' | 'low_stock' | 'out_of_stock'>('all');
+  const [page, setPage] = useState(1);
 
   // Form fields
   const [formName, setFormName] = useState('');
@@ -179,6 +183,12 @@ export default function ProductsPage() {
     return matchesSearch && matchesStock;
   });
 
+  useEffect(() => {
+    setPage(1);
+  }, [search, stockFilter]);
+
+  const { page: safePage, items: pagedProducts } = paginateItems(filteredProducts, page, PAGE_SIZE);
+
   if (loading) {
     return (
       <div className="loading-page">
@@ -291,7 +301,7 @@ export default function ProductsPage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredProducts.map((p) => {
+                {pagedProducts.map((p) => {
                   const stock = Number(p.stock_quantity) || 0;
                   const unit = p.unit || 'kgs';
 
@@ -355,6 +365,12 @@ export default function ProductsPage() {
               </tbody>
             </table>
           </div>
+          <Pagination
+            page={safePage}
+            pageSize={PAGE_SIZE}
+            total={filteredProducts.length}
+            onPageChange={setPage}
+          />
         </div>
       )}
 

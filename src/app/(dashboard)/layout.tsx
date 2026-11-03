@@ -111,7 +111,12 @@ export default function DashboardLayout({
 
         <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
           <div className="sidebar-logo">
-            <div className="brand-mark">TI</div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/company-logo.png"
+              alt="Import Export"
+              className="sidebar-brand-logo"
+            />
             <div>
               <h1>Tax Invoice</h1>
               <p>Billing workspace</p>

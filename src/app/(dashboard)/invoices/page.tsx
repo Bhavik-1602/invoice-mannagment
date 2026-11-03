@@ -9,6 +9,9 @@ import { generateInvoicePDF } from '@/lib/pdf';
 import { DataStore } from '@/lib/data-store';
 import Link from 'next/link';
 import { IconCopy, IconDownload, IconEdit, IconEye, IconInvoices, IconPrint, IconTrash } from '@/components/Icons';
+import Pagination, { paginateItems } from '@/components/Pagination';
+
+const PAGE_SIZE = 10;
 
 function SortIndicator({ active, order }: { active: boolean; order: 'asc' | 'desc' }) {
   if (!active) return <span style={{ opacity: 0.3 }}>↕</span>;
@@ -32,6 +35,7 @@ function InvoicesContent() {
   const [filterGstType, setFilterGstType] = useState('');
   const [sortBy, setSortBy] = useState('invoice_date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [page, setPage] = useState(1);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -161,6 +165,7 @@ function InvoicesContent() {
     setFilterGstType('');
     setSortBy('invoice_date');
     setSortOrder('desc');
+    setPage(1);
   };
 
   const toggleSort = (column: string) => {
@@ -170,7 +175,14 @@ function InvoicesContent() {
       setSortBy(column);
       setSortOrder('desc');
     }
+    setPage(1);
   };
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, dateFrom, dateTo, filterCustomer, filterGstType]);
+
+  const { page: safePage, items: pagedInvoices } = paginateItems(filteredInvoices, page, PAGE_SIZE);
 
 
   if (loading) {
@@ -293,7 +305,7 @@ function InvoicesContent() {
                 </tr>
               </thead>
               <tbody>
-                {filteredInvoices.map((inv) => (
+                {pagedInvoices.map((inv) => (
                   <tr key={inv.id}>
                     <td style={{ fontWeight: 500 }}>
                       <div>{inv.invoice_no}</div>
@@ -354,6 +366,13 @@ function InvoicesContent() {
             </table>
           </div>
         )}
+
+        <Pagination
+          page={safePage}
+          pageSize={PAGE_SIZE}
+          total={filteredInvoices.length}
+          onPageChange={setPage}
+        />
       </div>
 
       {/* Delete Confirmation Modal */}
